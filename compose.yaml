@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mulmeong-postgres
+    environment:
+      POSTGRES_DB: mulmeong
+      POSTGRES_USER: mulmeong
+      POSTGRES_PASSWORD: mulmeong
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - mulmeong-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mulmeong -d mulmeong"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mulmeong-pgdata:
