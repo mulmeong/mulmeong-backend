@@ -23,6 +23,7 @@ curl http://localhost:8080/api/health
 ```
 
 - 앱: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui.html
 - DB: `localhost:5432` / db=`mulmeong` user=`mulmeong` pw=`mulmeong`
 
 ## 빌드 / 테스트
