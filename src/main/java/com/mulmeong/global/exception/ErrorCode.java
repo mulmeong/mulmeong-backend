@@ -1,4 +1,4 @@
-package com.mulmeong.common.exception;
+package com.mulmeong.global.exception;
 
 import org.springframework.http.HttpStatus;
 
@@ -16,7 +16,12 @@ public enum ErrorCode {
 
     // Auth
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "A001", "authentication required"),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "A002", "access denied");
+    FORBIDDEN(HttpStatus.FORBIDDEN, "A002", "access denied"),
+
+    // User / Signup
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "U001", "이미 사용 중인 이메일입니다"),
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "U002", "이미 사용 중인 닉네임입니다"),
+    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "U003", "비밀번호가 일치하지 않습니다");
 
     private final HttpStatus status;
     private final String code;

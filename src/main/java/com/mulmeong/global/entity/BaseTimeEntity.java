@@ -1,4 +1,4 @@
-package com.mulmeong.common.entity;
+package com.mulmeong.global.entity;
 
 import java.time.Instant;
 
@@ -13,7 +13,7 @@ import lombok.Getter;
 
 /**
  * Adds {@code created_at} / {@code updated_at} columns to any entity that extends it.
- * Requires {@code @EnableJpaAuditing} (see {@link com.mulmeong.config.JpaConfig}).
+ * Requires {@code @EnableJpaAuditing} (see {@link com.mulmeong.global.config.JpaConfig}).
  */
 @Getter
 @MappedSuperclass

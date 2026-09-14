@@ -34,21 +34,52 @@ curl http://localhost:8080/api/health
 
 ## 구조
 
+패키지는 기능(도메인)별로 나눕니다. 공통/설정 코드는 `global`, 외부 API 연동은 `external`, 실제 비즈니스 기능은 `domain/<기능명>` 아래에 둡니다.
+
 ```
 src/main/java/com/mulmeong/
-├── config/       # 스프링 설정 (JPA 등)
-├── common/       # 공통: BaseTimeEntity, ApiResponse, 예외 처리
-├── controller/   # REST 컨트롤러
-├── service/      # 비즈니스 로직
-├── repository/   # 데이터 접근
-├── dto/          # 요청/응답 DTO
-├── entity/       # JPA 엔티티
-└── external/     # 외부 API 클라이언트 (TourAPI, 카카오 등)
+├── global/                # 앱 전역 공통 (특정 기능에 속하지 않음)
+│   ├── config/             # JpaConfig, OpenApiConfig ...
+│   ├── entity/              # BaseTimeEntity
+│   ├── response/            # ApiResponse
+│   ├── exception/           # BusinessException, ErrorCode, GlobalExceptionHandler
+│   └── controller/           # 헬스체크 등 시스템성 엔드포인트
+├── external/               # 외부 API 클라이언트 (TourAPI, 카카오 등) — 기능에 속하지 않음
+└── domain/                 # 기능별 패키지. 기능 하나 추가할 때 이 구조를 따름:
+    └── <feature>/
+        ├── controller/
+        ├── dto/
+        │   ├── request/     # 요청 DTO (ex. OnsenCreateRequest)
+        │   └── response/    # 응답 DTO (ex. OnsenResponse)
+        ├── entity/
+        ├── repository/
+        └── service/
 
 src/main/resources/
 ├── application.properties         # 공통 설정
 ├── application-local.properties   # 로컬 DB 접속 정보
 └── db/migration/                  # Flyway 마이그레이션 (V1__init.sql)
+```
+
+## API
+
+| 메서드 | 경로 | 설명 |
+| --- | --- | --- |
+| GET | `/api/health` | 헬스체크 |
+| POST | `/api/auth/signup` | 회원가입 (AUTH-07, 이메일 인증 없음) |
+| GET | `/api/auth/check-email?email=` | 이메일 중복 확인 |
+| GET | `/api/auth/check-nickname?nickname=` | 닉네임 중복 확인 |
+
+회원가입 요청 예시:
+
+```json
+POST /api/auth/signup
+{
+  "email": "you@example.com",
+  "password": "password1",
+  "passwordConfirm": "password1",
+  "nickname": "온탕러버"
+}
 ```
 
 ## 참고

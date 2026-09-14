@@ -1,4 +1,4 @@
-package com.mulmeong.common.exception;
+package com.mulmeong.global.exception;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import com.mulmeong.common.response.ApiResponse;
+import com.mulmeong.global.response.ApiResponse;
 
 import lombok.extern.slf4j.Slf4j;
 

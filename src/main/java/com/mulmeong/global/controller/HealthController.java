@@ -1,4 +1,4 @@
-package com.mulmeong.controller;
+package com.mulmeong.global.controller;
 
 import java.time.Instant;
 import java.util.Map;
@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mulmeong.common.response.ApiResponse;
+import com.mulmeong.global.response.ApiResponse;
 
 @RestController
 @RequestMapping("/api")

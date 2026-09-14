@@ -1,4 +1,4 @@
-package com.mulmeong.common.response;
+package com.mulmeong.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
