@@ -1,14 +1,13 @@
 package com.mulmeong.domain.user.entity;
 
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
-import com.mulmeong.global.entity.BaseTimeEntity;
+import com.mulmeong.global.common.BaseTimeEntity;
+import com.mulmeong.global.common.Level;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,7 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 회원 (users 테이블, 스펙 4-2).
+ * 회원 (users 테이블).
  * 생성은 {@link #createLocal} 팩터리로만 — 항상 유효한 상태로 만든다.
  */
 @Getter
@@ -31,47 +30,63 @@ public class User extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private String name;
+
     @Column(nullable = false, unique = true)
     private String email;
 
-    /** BCrypt 해시. 소셜 전용 계정(범위 ②)이면 null 가능. */
-    @Column
+    /** BCrypt 해시. */
+    @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false)
+    private String phone;
+
+    @Column(name = "birth_date", nullable = false)
+    private LocalDate birthDate;
 
     @Column(nullable = false, unique = true)
     private String nickname;
 
     @Column(name = "nickname_changed_at")
-    private Instant nicknameChangedAt;
+    private OffsetDateTime nicknameChangedAt;
 
-    /** AUTH-07 항목. 회원가입 화면엔 없어 현재는 선택(nullable). */
-    @Column
-    private String name;
+    /** 고유 방문 온천 수. 레벨 계산 기준 (같은 곳 재리뷰는 미반영, REV-06). */
+    @Column(name = "visit_count", nullable = false)
+    private Integer visitCount;
 
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
+    /** 프로필 공개 URL 토큰 (MY-08). PK를 노출하지 않기 위한 base62 랜덤 값. */
+    @Column(name = "profile_share_token", unique = true)
+    private String profileShareToken;
 
-    @Column
-    private String phone;
+    /** soft delete (MY-10). */
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Provider provider;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
-
-    private User(String email, String password, String nickname) {
+    private User(String name, String email, String encodedPassword, String phone, LocalDate birthDate,
+            String nickname, String profileShareToken) {
+        this.name = name;
         this.email = email;
-        this.password = password;
+        this.password = encodedPassword;
+        this.phone = phone;
+        this.birthDate = birthDate;
         this.nickname = nickname;
-        this.provider = Provider.LOCAL;
-        this.role = Role.USER;
+        this.profileShareToken = profileShareToken;
+        this.visitCount = 0;
     }
 
-    /** 이메일/비밀번호 회원가입 (AUTH-07). password 는 반드시 인코딩된 값. */
-    public static User createLocal(String email, String encodedPassword, String nickname) {
-        return new User(email, encodedPassword, nickname);
+    /** 이메일/비밀번호 회원가입 (AUTH-07). password는 반드시 인코딩된 값, nickname/profileShareToken은 서버가 생성한 값. */
+    public static User createLocal(String name, String email, String encodedPassword, String phone,
+            LocalDate birthDate, String nickname, String profileShareToken) {
+        return new User(name, email, encodedPassword, phone, birthDate, nickname, profileShareToken);
+    }
+
+    public boolean isWithdrawn() {
+        return deletedAt != null;
+    }
+
+    public Level level() {
+        return Level.from(visitCount);
     }
 }

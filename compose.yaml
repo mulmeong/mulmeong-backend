@@ -17,5 +17,19 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: mulmeong-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - mulmeong-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   mulmeong-pgdata:
+  mulmeong-redisdata:

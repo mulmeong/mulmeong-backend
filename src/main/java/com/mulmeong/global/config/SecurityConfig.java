@@ -1,24 +1,41 @@
 package com.mulmeong.global.config;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * Minimal security setup for the signup phase (AUTH-07).
- * <p>
- * The API is stateless and, for now, every endpoint is open — there is no login
- * mechanism yet. When JWT login (AUTH-06 / AUTH-01) lands, this is where the JWT
- * filter is registered and {@code authorizeHttpRequests} is tightened so that
- * reviews/favorites/mypage require authentication (AUTH-02).
- */
+import com.mulmeong.domain.auth.jwt.JwtTokenProvider;
+import com.mulmeong.global.security.JwtAuthenticationFilter;
+import com.mulmeong.global.security.RestAccessDeniedHandler;
+import com.mulmeong.global.security.RestAuthenticationEntryPoint;
+
+import lombok.RequiredArgsConstructor;
+
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private static final String API = "/api/v1";
+
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
+
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -26,9 +43,38 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST,
+                                API + "/auth/signup", API + "/auth/login", API + "/auth/reissue", API + "/auth/password/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, API + "/auth/email/check").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                API + "/onsens/**", API + "/map/**", API + "/darts/**", API + "/magazines/**",
+                                API + "/pamphlets/share/**", API + "/profiles/**", API + "/external/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                API + "/darts", API + "/darts/*/rethrow", API + "/onsens/*/nearby/reroll")
+                        .permitAll()
+                        .requestMatchers("/api/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .anyRequest().authenticated())
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    private CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

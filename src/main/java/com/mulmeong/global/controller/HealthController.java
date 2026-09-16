@@ -7,18 +7,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mulmeong.global.response.ApiResponse;
-
 @RestController
 @RequestMapping("/api")
 public class HealthController {
 
     @GetMapping("/health")
-    public ApiResponse<Map<String, Object>> health() {
-        return ApiResponse.ok(Map.of(
+    public Map<String, Object> health() {
+        return Map.of(
                 "status", "UP",
                 "service", "mulmeong-backend",
                 "timestamp", Instant.now().toString()
-        ));
+        );
     }
 }

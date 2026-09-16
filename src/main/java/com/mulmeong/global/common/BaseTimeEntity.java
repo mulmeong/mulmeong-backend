@@ -1,6 +1,6 @@
-package com.mulmeong.global.entity;
+package com.mulmeong.global.common;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -12,7 +12,7 @@ import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 
 /**
- * Adds {@code created_at} / {@code updated_at} columns to any entity that extends it.
+ * Adds {@code created_at} / {@code updated_at} (TIMESTAMPTZ) columns to any entity that extends it.
  * Requires {@code @EnableJpaAuditing} (see {@link com.mulmeong.global.config.JpaConfig}).
  */
 @Getter
@@ -22,9 +22,9 @@ public abstract class BaseTimeEntity {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    private OffsetDateTime createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private OffsetDateTime updatedAt;
 }
