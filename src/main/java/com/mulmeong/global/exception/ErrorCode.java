@@ -29,7 +29,12 @@ public enum ErrorCode {
     // User / Signup
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다"),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다"),
-    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다");
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다"),
+
+    // Map / Place
+    INVALID_BBOX(HttpStatus.BAD_REQUEST, "지도 영역이 올바르지 않습니다"),
+    BBOX_TOO_LARGE(HttpStatus.BAD_REQUEST, "지도 영역이 너무 넓습니다. 지도를 확대해주세요"),
+    KEYWORD_TOO_SHORT(HttpStatus.BAD_REQUEST, "검색어는 2자 이상 입력해주세요");
 
     private final HttpStatus status;
     private final String message;
