@@ -1,0 +1,96 @@
+# GitHub Actions 자동 배포 워크플로
+# main 브랜치에 push되면: 이미지 빌드 → ECR 업로드 → EC2에서 컨테이너 교체
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]        # main에 push될 때 실행
+  workflow_dispatch:        # Actions 탭에서 수동 실행도 가능
+
+env:
+  AWS_REGION: ap-northeast-2                                              # 서울 리전
+  ECR_REPOSITORY: mulmeong-backend                                        # ECR 저장소 이름
+  ECR_REGISTRY: 513263708924.dkr.ecr.ap-northeast-2.amazonaws.com         # 계정별 ECR 주소
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest   # GitHub이 빌려주는 리눅스 머신에서 실행
+
+    steps:
+      # 1) 저장소 코드 내려받기
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      # 2) AWS 자격증명 설정 (ECR에 로그인하기 위해 필요)
+      - name: AWS 자격증명 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3) ECR 로그인 (이미지를 올리려면 창고 문을 열어야 함)
+      - name: ECR 로그인
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 4) 이미지 빌드 후 ECR에 업로드
+      #    태그 2개 - latest(최신), 커밋 해시(롤백용)
+      - name: 이미지 빌드 및 푸시
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+                       -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+
+      # 5) EC2에 SSH 접속해서 새 이미지로 교체
+      - name: EC2 배포
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}        # EC2 탄력적 IP
+          username: ubuntu                     # 우분투 기본 계정
+          key: ${{ secrets.EC2_SSH_KEY }}      # mulmeong-key.pem 내용
+          script: |
+            set -e                             # 중간에 실패하면 즉시 중단
+
+            # EC2의 IAM 역할로 ECR 로그인 (액세스 키 불필요)
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+              | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+            # 새 이미지 받아오기
+            docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+            # 기존 컨테이너 정리 (없어도 에러 안 나게 || true)
+            docker rm -f mulmeong-api || true
+
+            # 새 컨테이너 실행
+            #   --env-file : DB 접속정보 등은 서버의 ~/app/.env 사용
+            #   -e CORS_ORIGINS : GitHub Variables 값으로 덮어씀 (-e가 우선순위 높음)
+            docker run -d \
+              --name mulmeong-api \
+              --env-file /home/ubuntu/app/.env \
+              -e CORS_ORIGINS="${{ vars.CORS_ORIGINS }}" \
+              -p 8080:8080 \
+              --restart unless-stopped \
+              ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+            # 안 쓰는 옛날 이미지 삭제 (디스크 용량 확보)
+            docker image prune -f
+
+            # 여기부터는 실패해도 즉시 중단되지 않게 set -e 해제
+            set +e
+            echo "앱 기동 대기 중..."
+
+            # 5초 간격으로 최대 18회(90초) 헬스체크
+            # seq가 없는 환경도 있어서 숫자를 직접 나열함
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
+              sleep 5
+              if curl -fs http://localhost:8080/api/health > /dev/null 2>&1; then
+                echo "배포 성공 (${i}번째 시도, 약 $((i * 5))초)"
+                exit 0
+              fi
+              echo "대기 중... ${i}/18"
+            done
+
+            echo "헬스체크 실패 - 최근 로그 80줄"
+            docker logs --tail 80 mulmeong-api
+            exit 1
