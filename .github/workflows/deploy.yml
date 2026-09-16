@@ -62,10 +62,13 @@ jobs:
             # 기존 컨테이너 정리 (없어도 에러 안 나게 || true)
             docker rm -f mulmeong-api || true
 
-            # 새 컨테이너 실행 (.env는 서버의 ~/app/.env 사용)
+            # 새 컨테이너 실행
+            #   --env-file : DB 접속정보 등은 서버의 ~/app/.env 사용
+            #   -e CORS_ORIGINS : GitHub Variables 값으로 덮어씀 (-e가 우선순위 높음)
             docker run -d \
               --name mulmeong-api \
               --env-file /home/ubuntu/app/.env \
+              -e CORS_ORIGINS="${{ vars.CORS_ORIGINS }}" \
               -p 8080:8080 \
               --restart unless-stopped \
               ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
