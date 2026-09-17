@@ -66,14 +66,15 @@ jobs:
             #   --network  : Redis 컨테이너와 같은 네트워크(mulmeong-net)에 연결 → REDIS_HOST=redis 로 접속 가능
             #   --env-file : DB 접속정보 등은 서버의 ~/app/.env 사용
             #   -e CORS_ORIGINS : GitHub Variables 값 (공개 설정값)
-            #   -e TOUR_API_KEY : GitHub Secrets 값 (비밀값)
+            #   -e KAKAO_REST_API_KEY / TOUR_API_KEY : GitHub Secrets 값 (비밀값)
             #   -e 는 --env-file 보다 우선순위가 높아서 같은 키가 있으면 덮어씀
             docker run -d \
               --name mulmeong-api \
               --network mulmeong-net \
               --env-file /home/ubuntu/app/.env \
               -e CORS_ORIGINS="${{ vars.CORS_ORIGINS }}" \
-              -e TOUR_API_KEY="${{ secrets.TOUR_API_KEY }}" \
+              -e KAKAO_REST_API_KEY="${{ secrets.KAKAO_REST_API_KEY }}" \
+              -e TOUR_API_SERVICE_KEY="${{ secrets.TOUR_API_KEY }}" \
               -p 8080:8080 \
               --restart unless-stopped \
               ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest

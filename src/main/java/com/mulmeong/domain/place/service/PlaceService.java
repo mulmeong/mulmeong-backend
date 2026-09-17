@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
@@ -12,11 +13,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mulmeong.domain.favorite.service.FavoriteService;
+import com.mulmeong.domain.place.dto.request.NearbyRerollRequest;
 import com.mulmeong.domain.place.dto.response.MapOnsensResponse;
+import com.mulmeong.domain.place.dto.response.OnsenCardResponse;
+import com.mulmeong.domain.place.dto.response.OnsenDetailResponse;
+import com.mulmeong.domain.place.dto.response.OnsenDirectionsResponse;
+import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
 import com.mulmeong.domain.place.dto.response.OnsenSearchResponse;
 import com.mulmeong.domain.place.entity.AccessLevel;
 import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.domain.place.entity.PlaceImage;
+import com.mulmeong.domain.place.entity.PlaceType;
 import com.mulmeong.domain.place.repository.PlaceImageRepository;
 import com.mulmeong.domain.place.repository.PlaceRepository;
 import com.mulmeong.domain.place.repository.RegionAggregate;
@@ -48,6 +55,8 @@ public class PlaceService {
     private final PlaceRepository placeRepository;
     private final PlaceImageRepository placeImageRepository;
     private final FavoriteService favoriteService;
+    private final ExternalPlaceClient externalPlaceClient;
+    private final ExternalDirectionsClient externalDirectionsClient;
 
     @Transactional(readOnly = true)
     public MapOnsensResponse getMapOnsens(double swLat, double swLng, double neLat, double neLng, int zoom,
@@ -112,6 +121,165 @@ public class PlaceService {
         }
 
         return new OnsenSearchResponse(trimmed, results);
+    }
+
+    @Transactional(readOnly = true)
+    public OnsenCardResponse getOnsenCard(Long onsenId) {
+        Place place = findOnsenOrThrow(onsenId);
+        AccessLevel accessLevel = place.getAccessLevel();
+        String stationName = place.getStation() == null ? null : place.getStation().getName();
+        String stationDescription = place.getStationToPlaceDesc();
+        String courseSummary = stationName == null ? stationDescription
+                : stationDescription == null ? stationName : stationName + " → " + stationDescription;
+        return new OnsenCardResponse(
+                place.getId(), place.getName(), new OnsenCardResponse.SpecBadges(
+                place.getWaterTemp() != null ? place.getWaterTemp().doubleValue() : null,
+                place.getWaterType(),
+                accessLevel != null ? accessLevel.getLabel() : null, null),
+                place.getWaterBenefit(), courseSummary, stationDescription);
+    }
+
+    @Transactional(readOnly = true)
+    public OnsenDetailResponse getOnsenDetail(Long onsenId) {
+        Place place = findOnsenOrThrow(onsenId);
+        List<String> images = placeImageRepository.findByPlaceIdOrderBySortOrder(onsenId).stream()
+                .map(PlaceImage::getImageUrl)
+                .toList();
+        AccessLevel accessLevel = place.getAccessLevel();
+        return new OnsenDetailResponse(
+                place.getId(), place.getName(), null, place.isRegisteredOnsen(),
+                place.getSido(), place.getSigungu(), place.getAddress(), place.getLat(), place.getLng(),
+                place.getWaterTemp() != null ? place.getWaterTemp().doubleValue() : null,
+                place.getWaterType(), place.getWaterBenefit(), place.getHasOutdoor(), place.getHasLodging(),
+                place.getFacilityType(), place.getPriceMin(), place.getPhone(), place.getHours(),
+                accessLevel != null ? accessLevel.getLabel() : null, images, place.getRegionComment());
+    }
+
+    @Transactional(readOnly = true)
+    public OnsenDirectionsResponse getOnsenDirections(Long onsenId, Double originLat, Double originLng, String mode) {
+        Place place = findOnsenOrThrow(onsenId);
+        String stationName = place.getStation() == null ? null : place.getStation().getName();
+        OnsenDirectionsResponse.StationToOnsen stationToOnsen =
+                new OnsenDirectionsResponse.StationToOnsen(place.getStationToPlaceDesc(), null);
+        // 출발지→역 구간은 카카오 길찾기 프록시 연동 후 채운다. 출발지가 없으면 null이 명세상 정상이다.
+        OnsenDirectionsResponse.OriginToStation originToStation = place.getStation() == null ? null
+                : externalDirectionsClient.route(mode, originLat, originLng,
+                        place.getStation().getLat(), place.getStation().getLng());
+        return new OnsenDirectionsResponse(stationName, stationToOnsen, originToStation);
+    }
+
+    @Transactional(readOnly = true)
+    public NearbyPlaceResponse getNearby(Long onsenId, int radius, boolean full, String category, int page, int size) {
+        Place onsen = findOnsenOrThrow(onsenId);
+        validateNearbyRequest(radius, category, page, size);
+        List<NearbyPlaceResponse.Content> content = findExternalNearby(onsen, radius, category);
+        if (content.isEmpty()) content = findLocalNearby(onsen, radius, category);
+        if (!full) {
+            content = content.stream().limit(6).toList();
+        } else {
+            int from = Math.min(page * size, content.size());
+            content = content.subList(from, Math.min(from + size, content.size()));
+        }
+        return new NearbyPlaceResponse(content);
+    }
+
+    @Transactional(readOnly = true)
+    public NearbyPlaceResponse rerollNearby(Long onsenId, NearbyRerollRequest request) {
+        Place onsen = findOnsenOrThrow(onsenId);
+        validateNearbyCategory(request.category());
+        Set<String> excluded = new HashSet<>(request.excludeIds());
+        List<NearbyPlaceResponse.Content> content = findExternalNearby(onsen, 5000, request.category());
+        if (content.isEmpty()) content = findLocalNearby(onsen, 5000, request.category());
+        content = content.stream()
+                .filter(item -> !excluded.contains(item.contentId()) && !excluded.contains(item.placeId()))
+                .limit(6)
+                .toList();
+        return new NearbyPlaceResponse(content);
+    }
+
+    private List<NearbyPlaceResponse.Content> findExternalNearby(Place onsen, int radius, String category) {
+        if (onsen.getLat() == null || onsen.getLng() == null) return List.of();
+        return externalPlaceClient.findNearby(onsen.getLat(), onsen.getLng(), radius, category).stream()
+                .filter(item -> item.lat() != null && item.lng() != null)
+                .filter(item -> distanceKm(onsen.getLat(), onsen.getLng(), item.lat(), item.lng()) * 1000 > 20)
+                .collect(Collectors.collectingAndThen(Collectors.toMap(
+                        item -> item.contentId() != null ? "tour:" + item.contentId() : "kakao:" + item.placeId(),
+                        item -> item, (first, ignored) -> first), map -> new ArrayList<>(map.values())));
+    }
+
+    private List<NearbyPlaceResponse.Content> findLocalNearby(Place onsen, int radius, String category) {
+        double latDelta = radius / 111_000.0;
+        double lngDelta = radius / (111_000.0 * Math.max(0.1, Math.cos(Math.toRadians(onsen.getLat()))));
+        return placeRepository.findNearbyPlaces(onsen.getLat() - latDelta, onsen.getLat() + latDelta,
+                        onsen.getLng() - lngDelta, onsen.getLng() + lngDelta).stream()
+                .filter(place -> matchesNearbyCategory(place, category))
+                .map(place -> new NearbyPlaceResponse.Content(
+                        nearbySource(place), nearbyType(place), nearbyContentId(place), nearbyPlaceId(place), place.getName(),
+                        placeImageRepository.findByPlaceIdOrderBySortOrder(place.getId()).stream()
+                                .findFirst().map(PlaceImage::getImageUrl).orElse(null),
+                        place.getLat(), place.getLng(),
+                        (int) Math.round(distanceKm(onsen.getLat(), onsen.getLng(), place.getLat(), place.getLng()) * 1000),
+                        null, place.getPhone(), place.getHomepageUrl(), null))
+                .filter(item -> item.image() != null)
+                .toList();
+    }
+
+    private boolean matchesNearbyCategory(Place place, String category) {
+        return "all".equals(category)
+                || ("food".equals(category) && place.getPlaceType() == PlaceType.RESTAURANT)
+                || ("cafe".equals(category) && place.getPlaceType() == PlaceType.CAFE)
+                || ("tour".equals(category) && place.getPlaceType() == PlaceType.ATTRACTION);
+    }
+
+    private String nearbyType(Place place) {
+        return switch (place.getPlaceType()) {
+            case RESTAURANT -> "맛집";
+            case CAFE -> "카페";
+            default -> "관광지";
+        };
+    }
+
+    private String nearbySource(Place place) {
+        return "TOUR_API".equals(place.getSource()) ? "TOUR" : "KAKAO";
+    }
+
+    private String nearbyContentId(Place place) {
+        return "TOUR_API".equals(place.getSource()) ? place.getExternalId() : null;
+    }
+
+    private String nearbyPlaceId(Place place) {
+        return "TOUR_API".equals(place.getSource()) ? null : place.getExternalId();
+    }
+
+    private double distanceKm(double lat1, double lng1, double lat2, double lng2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    private void validateNearbyRequest(int radius, String category, int page, int size) {
+        if (radius <= 0 || radius > 20_000 || page < 0 || size < 1 || size > 100) {
+            throw new BusinessException(ErrorCode.INVALID_NEARBY_REQUEST);
+        }
+        validateNearbyCategory(category);
+    }
+
+    private void validateNearbyCategory(String category) {
+        if (!Set.of("all", "tour", "food", "cafe").contains(category)) {
+            throw new BusinessException(ErrorCode.INVALID_NEARBY_REQUEST);
+        }
+    }
+
+    private Place findOnsenOrThrow(Long onsenId) {
+        Place place = placeRepository.findById(onsenId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ONSEN_NOT_FOUND));
+        if (place.getPlaceType() != PlaceType.ONSEN) {
+            throw new BusinessException(ErrorCode.ONSEN_NOT_FOUND);
+        }
+        return place;
     }
 
     private void validateBbox(double swLat, double swLng, double neLat, double neLng) {

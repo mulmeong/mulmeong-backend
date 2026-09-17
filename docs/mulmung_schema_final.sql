@@ -39,7 +39,7 @@ CREATE TABLE stations (
                           station_code  VARCHAR(20)      UNIQUE,          -- 원본 데이터의 역 코드 (시드 upsert 키)
                           name          VARCHAR(50)      NOT NULL,        -- 예: 충주역
                           station_type  VARCHAR(20)      NOT NULL DEFAULT 'TRAIN'
-                              CHECK (station_type IN ('KTX','TRAIN')),
+                              CHECK (station_type IN ('KTX','TRAIN','TERMINAL')),  -- V2 마이그레이션에서 TERMINAL 추가
                           sido          VARCHAR(20),
                           sigungu       VARCHAR(30),
                           lat           DOUBLE PRECISION NOT NULL,

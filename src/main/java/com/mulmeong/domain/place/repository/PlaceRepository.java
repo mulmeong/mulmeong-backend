@@ -62,6 +62,16 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     List<Place> searchOnsensByName(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("""
+            SELECT p FROM Place p
+            WHERE p.placeType <> com.mulmeong.domain.place.entity.PlaceType.ONSEN
+              AND p.lat IS NOT NULL AND p.lng IS NOT NULL
+              AND p.lat BETWEEN :minLat AND :maxLat
+              AND p.lng BETWEEN :minLng AND :maxLng
+            """)
+    List<Place> findNearbyPlaces(@Param("minLat") double minLat, @Param("maxLat") double maxLat,
+            @Param("minLng") double minLng, @Param("maxLng") double maxLng);
+
+    @Query("""
             SELECT new com.mulmeong.domain.place.repository.RegionAggregate(
                 p.sigunguCode, p.sido, p.sigungu, AVG(p.lat), AVG(p.lng), COUNT(p))
             FROM Place p
