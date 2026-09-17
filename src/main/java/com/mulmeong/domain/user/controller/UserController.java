@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mulmeong.domain.user.dto.request.SignupRequest;
-//import com.mulmeong.domain.user.dto.response.EmailCheckResponse;
+import com.mulmeong.domain.user.dto.response.EmailCheckResponse;
 import com.mulmeong.domain.user.dto.response.NicknameCheckResponse;
 import com.mulmeong.domain.user.dto.response.SignupResponse;
 import com.mulmeong.domain.user.service.UserService;
 
 import jakarta.validation.Valid;
-//import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 
@@ -37,11 +37,11 @@ public class UserController {
         return userService.signup(request);
     }
 
-//    /** 103 이메일 중복 확인. */
-//    @GetMapping("/email/check")
-//    public EmailCheckResponse checkEmail(@RequestParam @Email String email) {
-//        return userService.checkEmail(email);
-//    }
+    /** 103 이메일 중복 확인. */
+    @GetMapping("/email/check")
+    public EmailCheckResponse checkEmail(@RequestParam @Email String email) {
+        return userService.checkEmail(email);
+    }
 
     /** 닉네임 중복 확인. */
     @GetMapping("/nickname/check")

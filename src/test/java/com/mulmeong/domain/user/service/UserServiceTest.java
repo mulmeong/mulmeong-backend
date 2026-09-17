@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.mulmeong.domain.user.dto.request.SignupRequest;
+import com.mulmeong.domain.user.dto.response.EmailCheckResponse;
 import com.mulmeong.domain.user.dto.response.NicknameCheckResponse;
 import com.mulmeong.domain.user.dto.response.SignupResponse;
 import com.mulmeong.domain.user.entity.User;
@@ -91,6 +92,27 @@ class UserServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.DUPLICATE_NICKNAME);
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("이메일 중복 확인: 사용 가능하면 소문자로 정규화하고 available=true")
+    void checkEmail_available() {
+        given(userRepository.existsByEmail("test@example.com")).willReturn(false);
+
+        EmailCheckResponse res = userService.checkEmail(" Test@Example.COM ");
+
+        assertThat(res.email()).isEqualTo("test@example.com");
+        assertThat(res.available()).isTrue();
+    }
+
+    @Test
+    @DisplayName("이메일 중복 확인: 중복이면 available=false")
+    void checkEmail_duplicate() {
+        given(userRepository.existsByEmail("test@example.com")).willReturn(true);
+
+        EmailCheckResponse res = userService.checkEmail("test@example.com");
+
+        assertThat(res.available()).isFalse();
     }
 
     @Test
