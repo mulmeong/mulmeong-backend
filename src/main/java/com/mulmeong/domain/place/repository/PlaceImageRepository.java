@@ -9,4 +9,6 @@ import com.mulmeong.domain.place.entity.PlaceImage;
 public interface PlaceImageRepository extends JpaRepository<PlaceImage, Long> {
 
     List<PlaceImage> findByPlaceIdInAndSortOrder(List<Long> placeIds, short sortOrder);
+
+    List<PlaceImage> findByPlaceIdOrderBySortOrder(Long placeId);
 }

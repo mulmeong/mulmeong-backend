@@ -34,7 +34,13 @@ public enum ErrorCode {
     // Map / Place
     INVALID_BBOX(HttpStatus.BAD_REQUEST, "지도 영역이 올바르지 않습니다"),
     BBOX_TOO_LARGE(HttpStatus.BAD_REQUEST, "지도 영역이 너무 넓습니다. 지도를 확대해주세요"),
-    KEYWORD_TOO_SHORT(HttpStatus.BAD_REQUEST, "검색어는 2자 이상 입력해주세요");
+    KEYWORD_TOO_SHORT(HttpStatus.BAD_REQUEST, "검색어는 2자 이상 입력해주세요"),
+    INVALID_NEARBY_REQUEST(HttpStatus.BAD_REQUEST, "주변 여행지 요청값이 올바르지 않습니다"),
+    MAGAZINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 매거진입니다"),
+    INVALID_MAGAZINE_FILTER(HttpStatus.BAD_REQUEST, "매거진 필터값이 올바르지 않습니다"),
+    UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 이미지 형식입니다"),
+    IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "이미지 용량은 10MB 이하여야 합니다"),
+    ONSEN_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 온천입니다");
 
     private final HttpStatus status;
     private final String message;

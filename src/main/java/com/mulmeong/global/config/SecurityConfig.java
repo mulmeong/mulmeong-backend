@@ -1,8 +1,5 @@
 package com.mulmeong.global.config;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -14,9 +11,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.mulmeong.domain.auth.jwt.JwtTokenProvider;
 import com.mulmeong.global.security.JwtAuthenticationFilter;
@@ -35,9 +29,6 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
 
-    @Value("${app.cors.allowed-origins}")
-    private String allowedOrigins;
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -46,7 +37,6 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
@@ -57,27 +47,16 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, API + "/auth/email/check").permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                API + "/onsens/**", API + "/map/**", API + "/darts/**", API + "/magazines/**",
+                                API + "/onsen/**", API + "/map/**", API + "/darts/**", API + "/magazines/**",
                                 API + "/pamphlets/share/**", API + "/profiles/**", API + "/external/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST,
-                                API + "/darts", API + "/darts/*/rethrow", API + "/onsens/*/nearby/reroll")
+                                API + "/darts", API + "/darts/*/rethrow", API + "/onsen/*/nearby/reroll")
                         .permitAll()
                         .requestMatchers("/api/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
         return http.build();
-    }
-
-    private CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 
     @Bean

@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum AccessLevel {
-    WALKABLE("뚜벅이 가능"),
-    CAR_RECOMMENDED("자차 권장"),
-    CAR_REQUIRED("자차 필수");
+    WALKABLE("뚜벅이가능"),
+    CAR_RECOMMENDED("자차권장"),
+    CAR_REQUIRED("자차필수");
 
     private final String label;
 }
