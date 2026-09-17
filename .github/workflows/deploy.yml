@@ -59,19 +59,39 @@ jobs:
             # 새 이미지 받아오기
             docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
-            # 기존 컨테이너 정리 (없어도 에러 안 나게 || true)
+            # 도커 네트워크 확인 (없으면 생성) - 앱과 redis가 이름으로 통신하는 통로
+            docker network inspect mulmeong-net >/dev/null 2>&1 || docker network create mulmeong-net
+
+            # redis 컨테이너 확인 (없으면 생성) - 외부 포트는 열지 않음
+            if [ -z "$(docker ps -q -f name=^redis$)" ]; then
+              docker rm -f redis || true
+              docker run -d \
+                --name redis \
+                --network mulmeong-net \
+                --restart unless-stopped \
+                --memory 256m \
+                redis:7-alpine \
+                redis-server --maxmemory 200mb --maxmemory-policy allkeys-lru --appendonly yes
+            fi
+
+            # 기존 앱 컨테이너 정리 (없어도 에러 안 나게 || true)
             docker rm -f mulmeong-api || true
 
             # 새 컨테이너 실행
             #   --env-file : DB 접속정보 등은 서버의 ~/app/.env 사용
             #   -e CORS_ORIGINS : GitHub Variables 값 (공개 설정값)
-            #   -e TOUR_API_KEY : GitHub Secrets 값 (비밀값)
+            #   -e TOUR_API_KEY, JWT_SECRET : GitHub Secrets 값 (비밀값)
+            #   -e SPRING_DATA_REDIS_HOST : 컨테이너 이름으로 redis를 찾음
             #   -e 는 --env-file 보다 우선순위가 높아서 같은 키가 있으면 덮어씀
             docker run -d \
               --name mulmeong-api \
+              --network mulmeong-net \
               --env-file /home/ubuntu/app/.env \
               -e CORS_ORIGINS="${{ vars.CORS_ORIGINS }}" \
               -e TOUR_API_KEY="${{ secrets.TOUR_API_KEY }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e SPRING_DATA_REDIS_HOST=redis \
+              -e SPRING_DATA_REDIS_PORT=6379 \
               -p 8080:8080 \
               --restart unless-stopped \
               ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
