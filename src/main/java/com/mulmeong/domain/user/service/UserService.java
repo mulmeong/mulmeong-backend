@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mulmeong.domain.user.dto.request.SignupRequest;
-//import com.mulmeong.domain.user.dto.response.EmailCheckResponse;
+import com.mulmeong.domain.user.dto.response.EmailCheckResponse;
 import com.mulmeong.domain.user.dto.response.SignupResponse;
 import com.mulmeong.domain.user.entity.User;
 import com.mulmeong.domain.user.repository.UserRepository;
@@ -66,12 +66,12 @@ public class UserService {
         }
     }
 
-//    /** 이메일 사용 가능 여부 (API 103). 중복이어도 409가 아니라 200 + available=false. */
-//    @Transactional(readOnly = true)
-//    public EmailCheckResponse checkEmail(String email) {
-//        String normalized = email.trim().toLowerCase();
-//        return new EmailCheckResponse(normalized, !userRepository.existsByEmail(normalized));
-//    }
+    /** 이메일 사용 가능 여부 (API 103). 중복이어도 409가 아니라 200 + available=false. */
+    @Transactional(readOnly = true)
+    public EmailCheckResponse checkEmail(String email) {
+        String normalized = email.trim().toLowerCase();
+        return new EmailCheckResponse(normalized, !userRepository.existsByEmail(normalized));
+    }
 
     /** 닉네임 사용 가능 여부. */
     @Transactional(readOnly = true)
