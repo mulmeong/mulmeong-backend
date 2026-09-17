@@ -64,11 +64,14 @@ jobs:
 
             # 새 컨테이너 실행
             #   --env-file : DB 접속정보 등은 서버의 ~/app/.env 사용
-            #   -e CORS_ORIGINS : GitHub Variables 값으로 덮어씀 (-e가 우선순위 높음)
+            #   -e CORS_ORIGINS : GitHub Variables 값 (공개 설정값)
+            #   -e TOUR_API_KEY : GitHub Secrets 값 (비밀값)
+            #   -e 는 --env-file 보다 우선순위가 높아서 같은 키가 있으면 덮어씀
             docker run -d \
               --name mulmeong-api \
               --env-file /home/ubuntu/app/.env \
               -e CORS_ORIGINS="${{ vars.CORS_ORIGINS }}" \
+              -e TOUR_API_KEY="${{ secrets.TOUR_API_KEY }}" \
               -p 8080:8080 \
               --restart unless-stopped \
               ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
