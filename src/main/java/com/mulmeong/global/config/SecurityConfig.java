@@ -47,11 +47,11 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, API + "/auth/email/check").permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                API + "/onsen/**", API + "/map/**", API + "/darts/**", API + "/magazines/**",
+                                API + "/onsens/**", API + "/map/**", API + "/darts/**", API + "/magazines/**",
                                 API + "/pamphlets/share/**", API + "/profiles/**", API + "/external/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST,
-                                API + "/darts", API + "/darts/*/rethrow", API + "/onsen/*/nearby/reroll")
+                                API + "/darts", API + "/darts/*/rethrow", API + "/onsens/*/nearby/reroll")
                         .permitAll()
                         .requestMatchers("/api/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())

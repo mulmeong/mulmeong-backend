@@ -73,7 +73,7 @@ class OnsenApiIntegrationTest {
 
     @Test
     void api201_card_matchesContract() throws Exception {
-        mockMvc.perform(get("/api/v1/onsen/{id}/card", onsenId))
+        mockMvc.perform(get("/api/v1/onsens/{id}/card", onsenId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.onsenId").value(onsenId))
                 .andExpect(jsonPath("$.name").value("테스트온천"))
@@ -84,7 +84,7 @@ class OnsenApiIntegrationTest {
 
     @Test
     void api202_directions_matchesContract() throws Exception {
-        mockMvc.perform(get("/api/v1/onsen/{id}/directions", onsenId)
+        mockMvc.perform(get("/api/v1/onsens/{id}/directions", onsenId)
                         .param("originLat", "37.5").param("originLng", "127.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nearestStation").value("테스트역"))
@@ -93,7 +93,7 @@ class OnsenApiIntegrationTest {
 
     @Test
     void api203_detail_matchesContract() throws Exception {
-        mockMvc.perform(get("/api/v1/onsen/{id}", onsenId))
+        mockMvc.perform(get("/api/v1/onsens/{id}", onsenId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.onsenId").value(onsenId))
                 .andExpect(jsonPath("$.isRegistered").value(true))
@@ -103,7 +103,7 @@ class OnsenApiIntegrationTest {
 
     @Test
     void api204_nearby_returnsVisiblePlaces() throws Exception {
-        mockMvc.perform(get("/api/v1/onsen/{id}/nearby", onsenId)
+        mockMvc.perform(get("/api/v1/onsens/{id}/nearby", onsenId)
                         .param("category", "cafe"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].source").value("KAKAO"))
@@ -113,7 +113,7 @@ class OnsenApiIntegrationTest {
 
     @Test
     void api205_reroll_excludesRequestedPlace() throws Exception {
-        mockMvc.perform(post("/api/v1/onsen/{id}/nearby/reroll", onsenId)
+        mockMvc.perform(post("/api/v1/onsens/{id}/nearby/reroll", onsenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"category\":\"cafe\",\"excludeIds\":[\"test-poi-cafe\"]}"))
                 .andExpect(status().isOk())
@@ -122,7 +122,7 @@ class OnsenApiIntegrationTest {
 
     @Test
     void api206_fullNearby_supportsPagination() throws Exception {
-        mockMvc.perform(get("/api/v1/onsen/{id}/nearby", onsenId)
+        mockMvc.perform(get("/api/v1/onsens/{id}/nearby", onsenId)
                         .param("full", "true").param("page", "0").param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1));
