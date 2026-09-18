@@ -92,11 +92,10 @@ public class PlaceService {
         return new OnsenListResponse(items, page, safeSize, total, (int) Math.ceil((double) total / safeSize));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MapOnsensResponse getMapOnsens(double swLat, double swLng, double neLat, double neLng, int zoom,
             AccessLevel accessLevel, Boolean hasOutdoor, boolean registeredOnly, Long userId) {
         validateBbox(swLat, swLng, neLat, neLng);
-        geocodeMissingOnsens();
 
         MapOnsensResponse.Bbox bbox = new MapOnsensResponse.Bbox(swLat, swLng, neLat, neLng);
         String centerSidoCode = placeRepository
@@ -390,12 +389,6 @@ public class PlaceService {
                 isFavorite,
                 thumbnail
         );
-    }
-
-    private void geocodeMissingOnsens() {
-        placeRepository.findAllOnsensForMap(null, null, false).stream()
-                .filter(p -> p.getLat() == null || p.getLng() == null)
-                .forEach(externalPlaceClient::geocode);
     }
 
     private OnsenDetailResponse.ReviewSummary reviewSummary(Long placeId) {
