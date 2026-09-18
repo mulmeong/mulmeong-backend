@@ -105,6 +105,7 @@ class OnsenApiIntegrationTest {
                 .andExpect(jsonPath("$.access.nearestStation.name").value("테스트역"))
                 .andExpect(jsonPath("$.isFavorite").value(false))
                 .andExpect(jsonPath("$.reviewSummary.count").value(0))
+                .andExpect(jsonPath("$.thumbnail").value("https://cdn.test/onsen.jpg"))
                 .andExpect(jsonPath("$.images[0]").value("https://cdn.test/onsen.jpg"));
     }
 
@@ -133,5 +134,15 @@ class OnsenApiIntegrationTest {
                         .param("full", "true").param("page", "0").param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1));
+    }
+
+    @Test
+    void api201_listSupportsRegionKeywordImagesAndReviewSummary() throws Exception {
+        mockMvc.perform(get("/api/v1/onsens")
+                        .param("region", "충청북도")
+                        .param("keyword", "테스트"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].thumbnail").value("https://cdn.test/onsen.jpg"))
+                .andExpect(jsonPath("$.content[0].reviewCount").value(0));
     }
 }

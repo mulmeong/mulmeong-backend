@@ -47,7 +47,7 @@ public class ExternalPlaceController {
         }
         PoiCategory poiCategory;
         try {
-            poiCategory = PoiCategory.valueOf(category);
+            poiCategory = PoiCategory.valueOf(category.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_CATEGORY);
         }
@@ -63,7 +63,13 @@ public class ExternalPlaceController {
     }
 
     private ExternalCategoryPlaceResponse readCategoryCache(String key) {
-        String cached = redisTemplate.opsForValue().get(key);
+        String cached;
+        try {
+            cached = redisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            // Redis is only an optimization; an unavailable cache must not turn a Kakao request into a 5xx.
+            return null;
+        }
         if (cached == null) return null;
         try {
             return objectMapper.readValue(cached, ExternalCategoryPlaceResponse.class);
@@ -74,7 +80,11 @@ public class ExternalPlaceController {
 
     @SneakyThrows
     private void writeCategoryCache(String key, ExternalCategoryPlaceResponse response) {
-        redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(response), CATEGORY_CACHE_TTL);
+        try {
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(response), CATEGORY_CACHE_TTL);
+        } catch (Exception ignored) {
+            // Cache failure does not affect the successful external response.
+        }
     }
 
     @GetMapping("/directions")
@@ -94,7 +104,12 @@ public class ExternalPlaceController {
     }
 
     private ExternalDirectionsResponse readDirectionsCache(String key) {
-        String cached = redisTemplate.opsForValue().get(key);
+        String cached;
+        try {
+            cached = redisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            return null;
+        }
         if (cached == null) return null;
         try {
             return objectMapper.readValue(cached, ExternalDirectionsResponse.class);
@@ -105,6 +120,10 @@ public class ExternalPlaceController {
 
     @SneakyThrows
     private void writeDirectionsCache(String key, ExternalDirectionsResponse response) {
-        redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(response), DIRECTIONS_CACHE_TTL);
+        try {
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(response), DIRECTIONS_CACHE_TTL);
+        } catch (Exception ignored) {
+            // Cache failure does not affect the successful external response.
+        }
     }
 }

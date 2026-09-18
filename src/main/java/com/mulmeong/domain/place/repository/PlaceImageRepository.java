@@ -10,5 +10,7 @@ public interface PlaceImageRepository extends JpaRepository<PlaceImage, Long> {
 
     List<PlaceImage> findByPlaceIdInAndSortOrder(List<Long> placeIds, short sortOrder);
 
+    List<PlaceImage> findByPlaceIdInOrderBySortOrder(List<Long> placeIds);
+
     List<PlaceImage> findByPlaceIdOrderBySortOrder(Long placeId);
 }

@@ -24,29 +24,29 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     List<Place> findAllOnsensForMap(@Param("accessLevel") AccessLevel accessLevel,
             @Param("hasOutdoor") Boolean hasOutdoor, @Param("registeredOnly") boolean registeredOnly);
 
-    @Query("""
-            SELECT p FROM Place p
-            WHERE p.placeType = com.mulmeong.domain.place.entity.PlaceType.ONSEN
-              AND (:region IS NULL OR :region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+    @Query(value = """
+            SELECT * FROM places p
+            WHERE p.place_type = 'ONSEN'
+              AND (:region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
                    OR LOWER(COALESCE(p.sigungu, '')) LIKE LOWER(CONCAT('%', :region, '%'))
-                   OR LOWER(COALESCE(p.sidoCode, '')) = LOWER(:region)
-                   OR LOWER(COALESCE(p.sigunguCode, '')) = LOWER(:region))
-              AND (:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.sido_code, '')) = LOWER(:region)
+                   OR LOWER(COALESCE(p.sigungu_code, '')) = LOWER(:region))
+              AND (:keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(COALESCE(p.address, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))
-            ORDER BY p.registeredOnsen DESC, p.name
-            """)
+            ORDER BY p.is_registered_onsen DESC, p.name
+            """, nativeQuery = true)
     List<Place> findOnsens(@Param("region") String region, @Param("keyword") String keyword, Pageable pageable);
 
-    @Query("""
-            SELECT COUNT(p) FROM Place p
-            WHERE p.placeType = com.mulmeong.domain.place.entity.PlaceType.ONSEN
-              AND (:region IS NULL OR :region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+    @Query(value = """
+            SELECT COUNT(*) FROM places p
+            WHERE p.place_type = 'ONSEN'
+              AND (:region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
                    OR LOWER(COALESCE(p.sigungu, '')) LIKE LOWER(CONCAT('%', :region, '%'))
-                   OR LOWER(COALESCE(p.sidoCode, '')) = LOWER(:region)
-                   OR LOWER(COALESCE(p.sigunguCode, '')) = LOWER(:region))
-              AND (:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.sido_code, '')) = LOWER(:region)
+                   OR LOWER(COALESCE(p.sigungu_code, '')) = LOWER(:region))
+              AND (:keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(COALESCE(p.address, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))
-            """)
+            """, nativeQuery = true)
     long countOnsens(@Param("region") String region, @Param("keyword") String keyword);
 
     @Query("""

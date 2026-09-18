@@ -31,6 +31,8 @@ import com.mulmeong.domain.place.repository.PlaceImageRepository;
 import com.mulmeong.domain.place.repository.PlaceRepository;
 import com.mulmeong.domain.place.repository.RegionAggregate;
 import com.mulmeong.domain.place.repository.SigunguAggregate;
+import com.mulmeong.domain.place.repository.ReviewAggregate;
+import com.mulmeong.domain.place.repository.ReviewAggregateRepository;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 
@@ -59,26 +61,34 @@ public class PlaceService {
 
     private final PlaceRepository placeRepository;
     private final PlaceImageRepository placeImageRepository;
+    private final ReviewAggregateRepository reviewAggregateRepository;
     private final FavoriteService favoriteService;
     private final ExternalPlaceClient externalPlaceClient;
     private final ExternalDirectionsClient externalDirectionsClient;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public OnsenListResponse getOnsens(String region, int page, int size, String keyword) {
         if (page < 0 || size < 1 || size > 100) throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         int safeSize = Math.min(size, 100);
         List<Place> all = placeRepository.findOnsens(region == null ? "" : region.trim(),
                 keyword == null ? "" : keyword.trim(), PageRequest.of(page, safeSize));
+        // Seeded MOIS rows may not have coordinates yet. Geocode only the requested page,
+        // persist successful results, and return the coordinates in this response immediately.
+        all.stream().filter(p -> p.getLat() == null || p.getLng() == null).forEach(externalPlaceClient::geocode);
         long total = placeRepository.countOnsens(region == null ? "" : region.trim(),
                 keyword == null ? "" : keyword.trim());
         List<Long> ids = all.stream().map(Place::getId).toList();
-        Map<Long, String> images = placeImageRepository.findByPlaceIdInAndSortOrder(ids, THUMBNAIL_SORT_ORDER).stream()
+        Map<Long, String> images = ids.isEmpty() ? Map.of() : placeImageRepository.findByPlaceIdInOrderBySortOrder(ids).stream()
                 .collect(Collectors.toMap(PlaceImage::getPlaceId, PlaceImage::getImageUrl, (a, b) -> a));
+        Map<Long, ReviewAggregate> reviews = ids.isEmpty() ? Map.of() : reviewAggregateRepository.findByPlaceIds(ids).stream()
+                .collect(Collectors.toMap(ReviewAggregate::getPlaceId, r -> r));
         List<OnsenListResponse.Item> items = all.stream().map(p -> new OnsenListResponse.Item(p.getId(), p.getName(),
                 p.getSido(), p.getSigungu(), p.getAddress(), p.getLat(), p.getLng(), p.isRegisteredOnsen(),
                 p.getWaterTemp() == null ? null : p.getWaterTemp().doubleValue(), p.getWaterType(),
                 p.getAccessLevel() == null ? null : p.getAccessLevel().name(),
-                p.getAccessLevel() == null ? null : p.getAccessLevel().getLabel(), images.get(p.getId()))).toList();
+                p.getAccessLevel() == null ? null : p.getAccessLevel().getLabel(), images.get(p.getId()),
+                reviews.containsKey(p.getId()) ? reviews.get(p.getId()).getReviewCount() : 0,
+                reviews.containsKey(p.getId()) ? reviews.get(p.getId()).getRating() : null)).toList();
         return new OnsenListResponse(items, page, safeSize, total, (int) Math.ceil((double) total / safeSize));
     }
 
@@ -107,8 +117,8 @@ public class PlaceService {
                 swLat, neLat, swLng, neLng, accessLevel, hasOutdoor, registeredOnly);
         List<Long> placeIds = places.stream().map(Place::getId).toList();
 
-        Map<Long, String> thumbnails = placeImageRepository
-                .findByPlaceIdInAndSortOrder(placeIds, THUMBNAIL_SORT_ORDER).stream()
+        Map<Long, String> thumbnails = placeIds.isEmpty() ? Map.of() : placeImageRepository
+                .findByPlaceIdInOrderBySortOrder(placeIds).stream()
                 .collect(Collectors.toMap(PlaceImage::getPlaceId, PlaceImage::getImageUrl, (first, ignored) -> first));
         Set<Long> favoritePlaceIds = favoriteService.getFavoritePlaceIds(userId, placeIds);
 
@@ -189,8 +199,9 @@ public class PlaceService {
                         accessLevel == null ? null : accessLevel.name(),
                         accessLevel == null ? null : accessLevel.getLabel(),
                         nearestStation),
-                place.getAnnualVisitors(), images, place.getRegionComment(), place.getNotes(),
-                isFavorite, new OnsenDetailResponse.ReviewSummary(0, null));
+                place.getAnnualVisitors(), images, images.stream().findFirst().orElse(null),
+                place.getRegionComment(), place.getNotes(),
+                isFavorite, reviewSummary(onsenId));
     }
 
     @Transactional(readOnly = true)
@@ -385,5 +396,12 @@ public class PlaceService {
         placeRepository.findAllOnsensForMap(null, null, false).stream()
                 .filter(p -> p.getLat() == null || p.getLng() == null)
                 .forEach(externalPlaceClient::geocode);
+    }
+
+    private OnsenDetailResponse.ReviewSummary reviewSummary(Long placeId) {
+        List<ReviewAggregate> summaries = reviewAggregateRepository.findByPlaceIds(List.of(placeId));
+        if (summaries.isEmpty()) return new OnsenDetailResponse.ReviewSummary(0, null);
+        ReviewAggregate summary = summaries.get(0);
+        return new OnsenDetailResponse.ReviewSummary(summary.getReviewCount(), summary.getRating());
     }
 }
