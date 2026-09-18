@@ -40,7 +40,7 @@ public class MagazineService {
         boolean liked = userId != null && likeRepository.existsByMagazineIdAndUserId(id, userId);
         List<MagazineResponse.Place> places = placeRepository.findPlaces(id).stream().filter(p -> p.getLat() != null && p.getLng() != null).map(this::toPlace).toList();
         Magazine next = magazineRepository.findNext(m.getCategory(), id, PageRequest.of(0, 1)).stream().findFirst().orElse(null);
-        return new MagazineResponse.Detail(m.getId(), m.getCategory().name(), m.getCategory().getLabel(), m.getTitle(), m.getSubtitle(), m.getThumbnailUrl(), m.getHeroImageUrl(), m.getSidoCode(), regionName(m.getSidoCode()), m.getReadMinutes(), m.getLikeCount(), liked, m.getPublishedAt(), m.getAuthor() == null ? "물멍 에디터" : m.getAuthor(), m.getPhotographer(), m.getBody(), "MULMUNG_TEXT", places, next == null ? null : new MagazineResponse.Next(next.getId(), next.getTitle(), next.getCategory().getLabel(), next.getReadMinutes()), "https://mulmung.space/magazine/" + m.getId());
+        return new MagazineResponse.Detail(m.getId(), m.getCategory().name(), m.getCategory().getLabel(), m.getTitle(), m.getSubtitle(), m.getThumbnailUrl(), m.getHeroImageUrl(), m.getSidoCode(), regionName(m.getSidoCode()), m.getReadMinutes(), m.getLikeCount(), liked, m.getPublishedAt(), m.getAuthor() == null ? "물멍 에디터" : m.getAuthor(), m.getPhotographer(), m.getBody(), "MULMEONG_TEXT", places, next == null ? null : new MagazineResponse.Next(next.getId(), next.getTitle(), next.getCategory().getLabel(), next.getReadMinutes()), "https://mulmeong.space/magazine/" + m.getId());
     }
 
     @Transactional
