@@ -40,7 +40,16 @@ public enum ErrorCode {
     INVALID_MAGAZINE_FILTER(HttpStatus.BAD_REQUEST, "매거진 필터값이 올바르지 않습니다"),
     UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 이미지 형식입니다"),
     IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "이미지 용량은 10MB 이하여야 합니다"),
-    ONSEN_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 온천입니다");
+    ONSEN_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 온천입니다"),
+
+    // External proxy
+    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "정의되지 않은 카테고리입니다"),
+    RADIUS_TOO_LARGE(HttpStatus.BAD_REQUEST, "반경은 20km를 넘을 수 없습니다"),
+    INVALID_MODE(HttpStatus.BAD_REQUEST, "정의되지 않은 길찾기 수단입니다"),
+    ORIGIN_REQUIRED(HttpStatus.BAD_REQUEST, "자차 길찾기는 출발지 좌표가 필요합니다"),
+    ROUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "경로를 찾을 수 없습니다"),
+    EXTERNAL_API_FAILED(HttpStatus.BAD_GATEWAY, "외부 서비스 호출에 실패했습니다"),
+    EXTERNAL_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "외부 서비스 호출 한도를 초과했습니다");
 
     private final HttpStatus status;
     private final String message;

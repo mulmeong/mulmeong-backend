@@ -1,5 +1,6 @@
 package com.mulmeong.domain.place.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
 
 import com.mulmeong.domain.place.dto.response.OnsenCardResponse;
+import com.mulmeong.domain.place.dto.response.OnsenListResponse;
 import com.mulmeong.domain.place.dto.response.OnsenDetailResponse;
 import com.mulmeong.domain.place.dto.response.OnsenDirectionsResponse;
 import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
@@ -27,6 +29,15 @@ public class OnsenController {
 
     private final PlaceService placeService;
 
+    @GetMapping
+    public OnsenListResponse getOnsens(
+            @RequestParam(required = false) String region,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword) {
+        return placeService.getOnsens(region, page, size, keyword);
+    }
+
     @GetMapping("/{onsenId}/card")
     public OnsenCardResponse getCard(
             @PathVariable Long onsenId
@@ -39,15 +50,17 @@ public class OnsenController {
             @PathVariable Long onsenId,
             @RequestParam(required = false) Double originLat,
             @RequestParam(required = false) Double originLng,
-            @RequestParam(defaultValue = "TRANSIT") String mode) {
-        return placeService.getOnsenDirections(onsenId, originLat, originLng, mode);
+            @RequestParam(defaultValue = "TRANSIT") String mode,
+            @RequestParam(defaultValue = "true") boolean includePath) {
+        return placeService.getOnsenDirections(onsenId, originLat, originLng, mode, includePath);
     }
 
     @GetMapping("/{onsenId}")
     public OnsenDetailResponse getDetail(
-            @PathVariable Long onsenId
+            @PathVariable Long onsenId,
+            @AuthenticationPrincipal Long userId
     ) {
-        return placeService.getOnsenDetail(onsenId);
+        return placeService.getOnsenDetail(onsenId, userId);
     }
 
     @GetMapping("/{onsenId}/nearby")

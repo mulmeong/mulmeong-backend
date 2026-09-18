@@ -1,27 +1,47 @@
 package com.mulmeong.domain.place.dto.response;
 
-/** PAM-03 온천 정보 상세 응답. 명세에 맞춰 평탄한 구조를 사용한다. */
+import java.util.List;
+
+/** 202 온천 정보 상세 응답. */
 public record OnsenDetailResponse(
         Long onsenId,
         String name,
-        String grade,
         boolean isRegistered,
         String sido,
         String sigungu,
         String address,
         Double lat,
         Double lng,
-        Double waterTemp,
-        String waterType,
-        String waterBenefit,
-        Boolean hasOutdoor,
-        Boolean hasLodging,
-        String facilityType,
-        Integer priceMin,
         String phone,
+        String homepageUrl,
         String hours,
-        String accessLevel,
-        java.util.List<String> images,
-        String regionComment
+        String holiday,
+        String parkingInfo,
+        Integer priceMin,
+        Water water,
+        Facilities facilities,
+        Access access,
+        Integer annualVisitors,
+        List<String> images,
+        String regionComment,
+        String notes,
+        boolean isFavorite,
+        ReviewSummary reviewSummary
 ) {
+
+    public record Water(Double temp, String type, String component, Double ph, String benefit) {
+    }
+
+    public record Facilities(Boolean hasOutdoor, Boolean hasLodging, String facilityType) {
+    }
+
+    public record Access(String accessLevel, String accessLevelLabel, NearestStation nearestStation) {
+    }
+
+    public record NearestStation(String name, Double lat, Double lng, String stationToPlaceDesc) {
+    }
+
+    /** 리뷰 도메인이 아직 없어 항상 count=0, avgRating=null로 내려간다. */
+    public record ReviewSummary(long count, Double avgRating) {
+    }
 }

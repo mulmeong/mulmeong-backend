@@ -25,6 +25,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Place extends BaseTimeEntity {
 
+    public void updateCoordinates(double lat, double lng) {
+        this.lat = lat;
+        this.lng = lng;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -6,11 +6,17 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mulmeong.domain.place.dto.request.PoiCategory;
+import com.mulmeong.domain.place.dto.response.ExternalCategoryPlaceResponse;
 import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
+import com.mulmeong.domain.place.entity.Place;
+import com.mulmeong.global.exception.BusinessException;
+import com.mulmeong.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 
 /** Kakao Local과 TourAPI의 외부 응답을 nearby 공통 응답으로 변환한다. */
@@ -40,6 +46,70 @@ public class ExternalPlaceClient {
             result.addAll(findKakao(lat, lng, radius, category));
         }
         return result;
+    }
+
+    /** 904 카테고리 POI 토글. 프론트가 직접 호출하는 API라 nearby(204)와 달리 실패를 그대로 노출한다. */
+    public ExternalCategoryPlaceResponse findByCategory(double lat, double lng, int radius, PoiCategory category, int size) {
+        if (kakaoKey.isBlank()) {
+            throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
+        }
+        try {
+            String body = category.getKakaoGroupCode() != null
+                    ? categorySearch(lat, lng, radius, category.getKakaoGroupCode(), size)
+                    : keywordSearch(lat, lng, radius, "공원", size);
+            JsonNode documents = objectMapper.readTree(body).path("documents");
+            List<ExternalCategoryPlaceResponse.Item> items = new ArrayList<>();
+            if (documents.isArray()) {
+                for (JsonNode item : documents) {
+                    items.add(new ExternalCategoryPlaceResponse.Item(
+                            text(item, "id"), text(item, "place_name"), text(item, "category_name"),
+                            text(item, "road_address_name"), text(item, "phone"),
+                            decimal(item, "y"), decimal(item, "x"), integer(item, "distance"),
+                            text(item, "place_url")));
+                }
+            }
+            return new ExternalCategoryPlaceResponse(category.name(), items);
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new BusinessException(ErrorCode.EXTERNAL_QUOTA_EXCEEDED);
+        } catch (Exception e) {
+            log.warn("Kakao category search failed: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
+        }
+    }
+
+    private String categorySearch(double lat, double lng, int radius, String groupCode, int size) {
+        return restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
+                .path("/v2/local/search/category.json").queryParam("category_group_code", groupCode)
+                .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
+                .queryParam("sort", "distance").queryParam("size", size).build())
+                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
+                .retrieve().body(String.class);
+    }
+
+    private String keywordSearch(double lat, double lng, int radius, String keyword, int size) {
+        return restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
+                .path("/v2/local/search/keyword.json").queryParam("query", keyword)
+                .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
+                .queryParam("sort", "distance").queryParam("size", size).build())
+                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
+                .retrieve().body(String.class);
+    }
+
+    /** 주소 좌표가 비어 있는 온천을 지도 응답 전에 보정한다. 성공한 좌표는 DB에도 저장해 재호출 비용을 줄인다. */
+    public void geocode(Place place) {
+        if (place.getAddress() == null || place.getAddress().isBlank() || kakaoKey.isBlank()) return;
+        try {
+            String body = restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
+                    .path("/v2/local/search/address.json").queryParam("query", place.getAddress()).build())
+                    .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
+                    .retrieve().body(String.class);
+            JsonNode document = objectMapper.readTree(body).path("documents").path(0);
+            Double lat = decimal(document, "y");
+            Double lng = decimal(document, "x");
+            if (lat != null && lng != null) place.updateCoordinates(lat, lng);
+        } catch (Exception e) {
+            log.warn("Kakao geocoding failed for place {}: {}", place.getId(), e.getMessage());
+        }
     }
 
     private List<NearbyPlaceResponse.Content> findTour(double lat, double lng, int radius) {
