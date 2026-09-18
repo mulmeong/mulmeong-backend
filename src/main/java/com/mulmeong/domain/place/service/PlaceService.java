@@ -20,6 +20,7 @@ import com.mulmeong.domain.place.dto.response.OnsenDetailResponse;
 import com.mulmeong.domain.place.dto.response.OnsenDirectionsResponse;
 import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
 import com.mulmeong.domain.place.dto.response.OnsenSearchResponse;
+import com.mulmeong.domain.place.dto.response.OnsenListResponse;
 import com.mulmeong.domain.place.entity.AccessLevel;
 import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.domain.place.entity.PlaceImage;
@@ -59,9 +60,29 @@ public class PlaceService {
     private final ExternalDirectionsClient externalDirectionsClient;
 
     @Transactional(readOnly = true)
+    public OnsenListResponse getOnsens(String region, int page, int size, String keyword) {
+        if (page < 0 || size < 1 || size > 100) throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        int safeSize = Math.min(size, 100);
+        List<Place> all = placeRepository.findOnsens(region == null ? "" : region.trim(),
+                keyword == null ? "" : keyword.trim(), PageRequest.of(page, safeSize));
+        long total = placeRepository.countOnsens(region == null ? "" : region.trim(),
+                keyword == null ? "" : keyword.trim());
+        List<Long> ids = all.stream().map(Place::getId).toList();
+        Map<Long, String> images = placeImageRepository.findByPlaceIdInAndSortOrder(ids, THUMBNAIL_SORT_ORDER).stream()
+                .collect(Collectors.toMap(PlaceImage::getPlaceId, PlaceImage::getImageUrl, (a, b) -> a));
+        List<OnsenListResponse.Item> items = all.stream().map(p -> new OnsenListResponse.Item(p.getId(), p.getName(),
+                p.getSido(), p.getSigungu(), p.getAddress(), p.getLat(), p.getLng(), p.isRegisteredOnsen(),
+                p.getWaterTemp() == null ? null : p.getWaterTemp().doubleValue(), p.getWaterType(),
+                p.getAccessLevel() == null ? null : p.getAccessLevel().name(),
+                p.getAccessLevel() == null ? null : p.getAccessLevel().getLabel(), images.get(p.getId()))).toList();
+        return new OnsenListResponse(items, page, safeSize, total, (int) Math.ceil((double) total / safeSize));
+    }
+
+    @Transactional
     public MapOnsensResponse getMapOnsens(double swLat, double swLng, double neLat, double neLng, int zoom,
             AccessLevel accessLevel, Boolean hasOutdoor, boolean registeredOnly, Long userId) {
         validateBbox(swLat, swLng, neLat, neLng);
+        geocodeMissingOnsens();
 
         MapOnsensResponse.Bbox bbox = new MapOnsensResponse.Bbox(swLat, swLng, neLat, neLng);
         String centerSidoCode = placeRepository
@@ -135,7 +156,7 @@ public class PlaceService {
                 place.getId(), place.getName(), new OnsenCardResponse.SpecBadges(
                 place.getWaterTemp() != null ? place.getWaterTemp().doubleValue() : null,
                 place.getWaterType(),
-                accessLevel != null ? accessLevel.getLabel() : null, null),
+                accessLevel != null ? accessLevel.name() : null, null),
                 place.getWaterBenefit(), courseSummary, stationDescription);
     }
 
@@ -152,7 +173,11 @@ public class PlaceService {
                 place.getWaterTemp() != null ? place.getWaterTemp().doubleValue() : null,
                 place.getWaterType(), place.getWaterBenefit(), place.getHasOutdoor(), place.getHasLodging(),
                 place.getFacilityType(), place.getPriceMin(), place.getPhone(), place.getHours(),
-                accessLevel != null ? accessLevel.getLabel() : null, images, place.getRegionComment());
+                accessLevel != null ? accessLevel.name() : null, images, place.getRegionComment(),
+                place.getWaterComponent(), place.getPh() == null ? null : place.getPh().doubleValue(),
+                place.getHoliday(), place.getParkingInfo(), place.getHomepageUrl(), place.getRepresentativeMenu(),
+                place.getAnnualVisitors(), place.getStation() == null ? null : place.getStation().getName(),
+                place.getStationToPlaceDesc());
     }
 
     @Transactional(readOnly = true)
@@ -208,6 +233,7 @@ public class PlaceService {
     }
 
     private List<NearbyPlaceResponse.Content> findLocalNearby(Place onsen, int radius, String category) {
+        if (onsen.getLat() == null || onsen.getLng() == null) return List.of();
         double latDelta = radius / 111_000.0;
         double lngDelta = radius / (111_000.0 * Math.max(0.1, Math.cos(Math.toRadians(onsen.getLat()))));
         return placeRepository.findNearbyPlaces(onsen.getLat() - latDelta, onsen.getLat() + latDelta,
@@ -315,5 +341,11 @@ public class PlaceService {
                 isFavorite,
                 thumbnail
         );
+    }
+
+    private void geocodeMissingOnsens() {
+        placeRepository.findAllOnsensForMap(null, null, false).stream()
+                .filter(p -> p.getLat() == null || p.getLng() == null)
+                .forEach(externalPlaceClient::geocode);
     }
 }

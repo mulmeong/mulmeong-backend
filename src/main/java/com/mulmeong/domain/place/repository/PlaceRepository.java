@@ -16,6 +16,42 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     @Query("""
             SELECT p FROM Place p
             WHERE p.placeType = com.mulmeong.domain.place.entity.PlaceType.ONSEN
+              AND (:accessLevel IS NULL OR p.accessLevel = :accessLevel)
+              AND (:hasOutdoor IS NULL OR p.hasOutdoor = :hasOutdoor)
+              AND (:registeredOnly = false OR p.registeredOnsen = true)
+            ORDER BY p.name
+            """)
+    List<Place> findAllOnsensForMap(@Param("accessLevel") AccessLevel accessLevel,
+            @Param("hasOutdoor") Boolean hasOutdoor, @Param("registeredOnly") boolean registeredOnly);
+
+    @Query("""
+            SELECT p FROM Place p
+            WHERE p.placeType = com.mulmeong.domain.place.entity.PlaceType.ONSEN
+              AND (:region IS NULL OR :region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+                   OR LOWER(COALESCE(p.sigungu, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+                   OR LOWER(COALESCE(p.sidoCode, '')) = LOWER(:region)
+                   OR LOWER(COALESCE(p.sigunguCode, '')) = LOWER(:region))
+              AND (:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.address, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY p.registeredOnsen DESC, p.name
+            """)
+    List<Place> findOnsens(@Param("region") String region, @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT COUNT(p) FROM Place p
+            WHERE p.placeType = com.mulmeong.domain.place.entity.PlaceType.ONSEN
+              AND (:region IS NULL OR :region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+                   OR LOWER(COALESCE(p.sigungu, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+                   OR LOWER(COALESCE(p.sidoCode, '')) = LOWER(:region)
+                   OR LOWER(COALESCE(p.sigunguCode, '')) = LOWER(:region))
+              AND (:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.address, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            """)
+    long countOnsens(@Param("region") String region, @Param("keyword") String keyword);
+
+    @Query("""
+            SELECT p FROM Place p
+            WHERE p.placeType = com.mulmeong.domain.place.entity.PlaceType.ONSEN
               AND p.lat IS NOT NULL
               AND p.lng IS NOT NULL
               AND p.lat BETWEEN :swLat AND :neLat

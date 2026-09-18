@@ -22,6 +22,15 @@ public record OnsenDetailResponse(
         String hours,
         String accessLevel,
         java.util.List<String> images,
-        String regionComment
+        String regionComment,
+        String waterComponent,
+        Double ph,
+        String holiday,
+        String parkingInfo,
+        String homepageUrl,
+        String representativeMenu,
+        Integer annualVisitors,
+        String nearestStation,
+        String stationToPlaceDescription
 ) {
 }
