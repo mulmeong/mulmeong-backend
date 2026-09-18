@@ -3,6 +3,7 @@ package com.mulmeong.domain.place.service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mulmeong.domain.favorite.service.FavoriteService;
 import com.mulmeong.domain.place.dto.request.NearbyRerollRequest;
+import com.mulmeong.domain.place.dto.response.ExternalDirectionsResponse;
 import com.mulmeong.domain.place.dto.response.MapOnsensResponse;
 import com.mulmeong.domain.place.dto.response.OnsenCardResponse;
 import com.mulmeong.domain.place.dto.response.OnsenDetailResponse;
@@ -33,9 +35,11 @@ import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PlaceService {
 
     // 대한민국 대략 범위 밖이거나 이보다 넓은 bbox는 전국을 넘어서는 요청으로 간주한다.
@@ -161,36 +165,70 @@ public class PlaceService {
     }
 
     @Transactional(readOnly = true)
-    public OnsenDetailResponse getOnsenDetail(Long onsenId) {
+    public OnsenDetailResponse getOnsenDetail(Long onsenId, Long userId) {
         Place place = findOnsenOrThrow(onsenId);
         List<String> images = placeImageRepository.findByPlaceIdOrderBySortOrder(onsenId).stream()
                 .map(PlaceImage::getImageUrl)
                 .toList();
         AccessLevel accessLevel = place.getAccessLevel();
+        OnsenDetailResponse.NearestStation nearestStation = place.getStation() == null ? null
+                : new OnsenDetailResponse.NearestStation(place.getStation().getName(), place.getStation().getLat(),
+                        place.getStation().getLng(), place.getStationToPlaceDesc());
+        boolean isFavorite = favoriteService.getFavoritePlaceIds(userId, List.of(onsenId)).contains(onsenId);
         return new OnsenDetailResponse(
-                place.getId(), place.getName(), null, place.isRegisteredOnsen(),
+                place.getId(), place.getName(), place.isRegisteredOnsen(),
                 place.getSido(), place.getSigungu(), place.getAddress(), place.getLat(), place.getLng(),
-                place.getWaterTemp() != null ? place.getWaterTemp().doubleValue() : null,
-                place.getWaterType(), place.getWaterBenefit(), place.getHasOutdoor(), place.getHasLodging(),
-                place.getFacilityType(), place.getPriceMin(), place.getPhone(), place.getHours(),
-                accessLevel != null ? accessLevel.name() : null, images, place.getRegionComment(),
-                place.getWaterComponent(), place.getPh() == null ? null : place.getPh().doubleValue(),
-                place.getHoliday(), place.getParkingInfo(), place.getHomepageUrl(), place.getRepresentativeMenu(),
-                place.getAnnualVisitors(), place.getStation() == null ? null : place.getStation().getName(),
-                place.getStationToPlaceDesc());
+                place.getPhone(), place.getHomepageUrl(), place.getHours(), place.getHoliday(), place.getParkingInfo(),
+                place.getPriceMin(),
+                new OnsenDetailResponse.Water(
+                        place.getWaterTemp() == null ? null : place.getWaterTemp().doubleValue(),
+                        place.getWaterType(), place.getWaterComponent(),
+                        place.getPh() == null ? null : place.getPh().doubleValue(), place.getWaterBenefit()),
+                new OnsenDetailResponse.Facilities(place.getHasOutdoor(), place.getHasLodging(), place.getFacilityType()),
+                new OnsenDetailResponse.Access(
+                        accessLevel == null ? null : accessLevel.name(),
+                        accessLevel == null ? null : accessLevel.getLabel(),
+                        nearestStation),
+                place.getAnnualVisitors(), images, place.getRegionComment(), place.getNotes(),
+                isFavorite, new OnsenDetailResponse.ReviewSummary(0, null));
     }
 
     @Transactional(readOnly = true)
-    public OnsenDirectionsResponse getOnsenDirections(Long onsenId, Double originLat, Double originLng, String mode) {
+    public OnsenDirectionsResponse getOnsenDirections(Long onsenId, Double originLat, Double originLng, String mode,
+            boolean includePath) {
         Place place = findOnsenOrThrow(onsenId);
-        String stationName = place.getStation() == null ? null : place.getStation().getName();
-        OnsenDirectionsResponse.StationToOnsen stationToOnsen =
-                new OnsenDirectionsResponse.StationToOnsen(place.getStationToPlaceDesc(), null);
-        // 출발지→역 구간은 카카오 길찾기 프록시 연동 후 채운다. 출발지가 없으면 null이 명세상 정상이다.
-        OnsenDirectionsResponse.OriginToStation originToStation = place.getStation() == null ? null
-                : externalDirectionsClient.route(mode, originLat, originLng,
-                        place.getStation().getLat(), place.getStation().getLng());
-        return new OnsenDirectionsResponse(stationName, stationToOnsen, originToStation);
+        String normalizedMode = mode == null ? "TRANSIT" : mode.toUpperCase(Locale.ROOT);
+        if ("CAR".equals(normalizedMode) && (originLat == null || originLng == null)) {
+            throw new BusinessException(ErrorCode.ORIGIN_REQUIRED);
+        }
+
+        OnsenDirectionsResponse.NearestStation nearestStation = place.getStation() == null ? null
+                : new OnsenDirectionsResponse.NearestStation(
+                        place.getStation().getName(), place.getStation().getLat(), place.getStation().getLng());
+
+        List<OnsenDirectionsResponse.Leg> legs = new ArrayList<>();
+        Integer originLegDuration = null;
+        if (place.getStation() != null && originLat != null && originLng != null) {
+            try {
+                ExternalDirectionsResponse route = externalDirectionsClient.route(normalizedMode, originLat, originLng,
+                        place.getStation().getLat(), place.getStation().getLng(), includePath);
+                legs.add(new OnsenDirectionsResponse.Leg(legs.size() + 1, "ORIGIN_TO_STATION", "KAKAO",
+                        normalizedMode, route.distanceM(), route.totalDurationMin(), route.summary(), route.path()));
+                originLegDuration = route.totalDurationMin();
+            } catch (BusinessException e) {
+                // 카카오 장애 시 부분 성공(200)으로 처리 — 거점역 구간만 응답한다.
+                log.warn("Origin-to-station route failed for onsen {}: {}", onsenId, e.getMessage());
+            }
+        }
+        if (place.getStation() != null) {
+            legs.add(new OnsenDirectionsResponse.Leg(legs.size() + 1, "STATION_TO_ONSEN", "MANUAL", "BUS",
+                    null, null, place.getStationToPlaceDesc(), null));
+        }
+
+        String kakaoDeepLink = place.getLat() == null || place.getLng() == null ? null
+                : String.format(Locale.ROOT, "https://map.kakao.com/link/to/%s,%f,%f",
+                        place.getName(), place.getLat(), place.getLng());
+        return new OnsenDirectionsResponse(place.getId(), nearestStation, legs, originLegDuration, kakaoDeepLink);
     }
 
     @Transactional(readOnly = true)

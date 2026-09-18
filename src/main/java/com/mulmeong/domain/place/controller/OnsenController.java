@@ -1,5 +1,6 @@
 package com.mulmeong.domain.place.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,15 +50,17 @@ public class OnsenController {
             @PathVariable Long onsenId,
             @RequestParam(required = false) Double originLat,
             @RequestParam(required = false) Double originLng,
-            @RequestParam(defaultValue = "TRANSIT") String mode) {
-        return placeService.getOnsenDirections(onsenId, originLat, originLng, mode);
+            @RequestParam(defaultValue = "TRANSIT") String mode,
+            @RequestParam(defaultValue = "true") boolean includePath) {
+        return placeService.getOnsenDirections(onsenId, originLat, originLng, mode, includePath);
     }
 
     @GetMapping("/{onsenId}")
     public OnsenDetailResponse getDetail(
-            @PathVariable Long onsenId
+            @PathVariable Long onsenId,
+            @AuthenticationPrincipal Long userId
     ) {
-        return placeService.getOnsenDetail(onsenId);
+        return placeService.getOnsenDetail(onsenId, userId);
     }
 
     @GetMapping("/{onsenId}/nearby")

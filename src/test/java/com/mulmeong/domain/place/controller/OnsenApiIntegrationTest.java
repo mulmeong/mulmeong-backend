@@ -84,11 +84,13 @@ class OnsenApiIntegrationTest {
 
     @Test
     void api202_directions_matchesContract() throws Exception {
+        // 테스트 환경엔 카카오 키가 없어 출발지→거점역 leg는 실패로 생략되고, 거점역→온천 leg만 내려온다.
         mockMvc.perform(get("/api/v1/onsens/{id}/directions", onsenId)
                         .param("originLat", "37.5").param("originLng", "127.0"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nearestStation").value("테스트역"))
-                .andExpect(jsonPath("$.stationToOnsen.description").value("버스 10분"));
+                .andExpect(jsonPath("$.nearestStation.name").value("테스트역"))
+                .andExpect(jsonPath("$.legs[0].type").value("STATION_TO_ONSEN"))
+                .andExpect(jsonPath("$.legs[0].summary").value("버스 10분"));
     }
 
     @Test
@@ -98,6 +100,11 @@ class OnsenApiIntegrationTest {
                 .andExpect(jsonPath("$.onsenId").value(onsenId))
                 .andExpect(jsonPath("$.isRegistered").value(true))
                 .andExpect(jsonPath("$.lat").value(36.01))
+                .andExpect(jsonPath("$.water.temp").value(42.5))
+                .andExpect(jsonPath("$.access.accessLevel").value("WALKABLE"))
+                .andExpect(jsonPath("$.access.nearestStation.name").value("테스트역"))
+                .andExpect(jsonPath("$.isFavorite").value(false))
+                .andExpect(jsonPath("$.reviewSummary.count").value(0))
                 .andExpect(jsonPath("$.images[0]").value("https://cdn.test/onsen.jpg"));
     }
 
