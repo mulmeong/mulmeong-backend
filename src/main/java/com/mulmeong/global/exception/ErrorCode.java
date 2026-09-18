@@ -44,6 +44,7 @@ public enum ErrorCode {
     PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 장소입니다"),
     FAVORITE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "찜은 최대 300개까지 저장할 수 있습니다"),
     INVALID_FAVORITE_CATEGORY(HttpStatus.BAD_REQUEST, "정의되지 않은 찜 카테고리입니다"),
+    PAMPHLET_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팜플렛입니다"),
 
     // External proxy
     INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "정의되지 않은 카테고리입니다"),
