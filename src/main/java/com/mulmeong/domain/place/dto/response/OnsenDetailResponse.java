@@ -23,6 +23,7 @@ public record OnsenDetailResponse(
         Access access,
         Integer annualVisitors,
         List<String> images,
+        String thumbnail,
         String regionComment,
         String notes,
         boolean isFavorite,
@@ -41,7 +42,6 @@ public record OnsenDetailResponse(
     public record NearestStation(String name, Double lat, Double lng, String stationToPlaceDesc) {
     }
 
-    /** 리뷰 도메인이 아직 없어 항상 count=0, avgRating=null로 내려간다. */
     public record ReviewSummary(long count, Double avgRating) {
     }
 }
