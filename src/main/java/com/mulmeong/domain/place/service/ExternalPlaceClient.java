@@ -48,6 +48,50 @@ public class ExternalPlaceClient {
         return result;
     }
 
+    /** TourAPI의 온천 검색 결과를 정기 동기화할 때 사용하는 최소 데이터만 반환한다. */
+    public List<TourOnsenData> findOnsensForSync(int maxPages, int pageSize) {
+        if (tourKey.isBlank()) return List.of();
+        List<TourOnsenData> result = new ArrayList<>();
+        try {
+            for (int page = 1; page <= maxPages; page++) {
+                int pageNo = page;
+                String body = restClient.get().uri(uri -> uri.scheme("https").host("apis.data.go.kr")
+                        .path("/B551011/KorService2/searchKeyword2")
+                        .queryParam("serviceKey", tourKey).queryParam("MobileOS", "ETC")
+                        .queryParam("MobileApp", "mulmeong").queryParam("keyword", "온천")
+                        .queryParam("contentTypeId", 12).queryParam("arrange", "E")
+                        .queryParam("numOfRows", pageSize).queryParam("pageNo", pageNo)
+                        .queryParam("_type", "json").build()).retrieve().body(String.class);
+                JsonNode items = objectMapper.readTree(body).path("response").path("body").path("items").path("item");
+                if (!items.isArray() || items.isEmpty()) break;
+                for (JsonNode item : items) {
+                    String id = text(item, "contentid");
+                    Double lat = decimal(item, "mapy");
+                    Double lng = decimal(item, "mapx");
+                    String name = text(item, "title");
+                    if (id != null && name != null) {
+                        result.add(new TourOnsenData(id, name, joinAddress(item), lat, lng,
+                                text(item, "tel"), text(item, "homepage")));
+                    }
+                }
+                if (items.size() < pageSize) break;
+            }
+            return result;
+        } catch (Exception e) {
+            log.warn("TourAPI onsen sync failed: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private static String joinAddress(JsonNode item) {
+        String address = text(item, "addr1");
+        String detail = text(item, "addr2");
+        return address == null ? detail : detail == null ? address : address + " " + detail;
+    }
+
+    public record TourOnsenData(String externalId, String name, String address, Double lat, Double lng,
+            String phone, String homepageUrl) {}
+
     /** 904 카테고리 POI 토글. 프론트가 직접 호출하는 API라 nearby(204)와 달리 실패를 그대로 노출한다. */
     public ExternalCategoryPlaceResponse findByCategory(double lat, double lng, int radius, PoiCategory category, int size) {
         if (kakaoKey.isBlank()) {

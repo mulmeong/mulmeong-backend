@@ -25,6 +25,47 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Place extends BaseTimeEntity {
 
+    public static Place createExternal(String source, String externalId, String name,
+            Double lat, Double lng, PlaceType placeType, String address, String phone) {
+        Place place = new Place();
+        place.source = source; place.externalId = externalId; place.name = name;
+        place.lat = lat; place.lng = lng; place.placeType = placeType;
+        place.address = address; place.phone = phone; place.registeredOnsen = false;
+        return place;
+    }
+
+    public void updateExternal(String name, Double lat, Double lng, PlaceType placeType,
+            String address, String phone) {
+        this.name = name; this.lat = lat; this.lng = lng; this.placeType = placeType;
+        this.address = address; this.phone = phone;
+    }
+
+    public static Place createTourOnsen(String externalId, String name, String address,
+            Double lat, Double lng, String phone, String homepageUrl) {
+        Place place = new Place();
+        place.placeType = PlaceType.ONSEN;
+        place.registeredOnsen = false;
+        place.source = "TOUR_API";
+        place.externalId = externalId;
+        place.name = name;
+        place.address = address;
+        place.lat = lat;
+        place.lng = lng;
+        place.phone = phone;
+        place.homepageUrl = homepageUrl;
+        return place;
+    }
+
+    public void updateTourData(String name, String address, Double lat, Double lng,
+            String phone, String homepageUrl) {
+        this.name = name;
+        this.address = address;
+        this.lat = lat;
+        this.lng = lng;
+        this.phone = phone;
+        this.homepageUrl = homepageUrl;
+    }
+
     public void updateCoordinates(double lat, double lng) {
         this.lat = lat;
         this.lng = lng;

@@ -37,7 +37,7 @@ public class DartService {
 
     private final DartCandidateRepository candidateRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
     public DartResponse throwDart(DartRequest request, Long userId, boolean reroll) {
