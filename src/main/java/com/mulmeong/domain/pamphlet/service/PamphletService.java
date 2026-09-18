@@ -40,9 +40,10 @@ public class PamphletService {
         }
         String token;
         do { token = RandomTokenGenerator.generate(8); } while (pamphlets.existsByShareToken(token));
-        Pamphlet pamphlet = pamphlets.save(new Pamphlet(userId, request.title().trim(), request.partySize(), request.travelDate(), cover, token));
+        Short partySize = request.partySize() == null ? null : request.partySize().shortValue();
+        Pamphlet pamphlet = pamphlets.save(new Pamphlet(userId, request.title().trim(), partySize, request.travelDate(), cover, token));
         for (int i = 0; i < selected.size(); i++) pamphletPlaces.save(new PamphletPlace(pamphlet.getId(), selected.get(i).getId(), (short) i));
-        return new PamphletCreateResponse(pamphlet.getId(), token, SHARE_BASE + token, pamphlet.getTitle(), pamphlet.getPartySize(), pamphlet.getTravelDate(), selected.size(), cover, pamphlet.getCreatedAt());
+        return new PamphletCreateResponse(pamphlet.getId(), token, SHARE_BASE + token, pamphlet.getTitle(), toInteger(pamphlet.getPartySize()), pamphlet.getTravelDate(), selected.size(), cover, pamphlet.getCreatedAt());
     }
 
     @Transactional(readOnly = true)
@@ -73,14 +74,17 @@ public class PamphletService {
     private PamphletListItem listItem(Pamphlet p) {
         List<Place> selected = orderedPlaces(p.getId());
         String region = regionName(selected);
-        return new PamphletListItem(p.getId(), p.getShareToken(), p.getTitle(), p.getPartySize(), p.getTravelDate(), p.getCoverImageUrl(), selected.size(), region, SHARE_BASE + p.getShareToken(), p.getCreatedAt());
+        return new PamphletListItem(p.getId(), p.getShareToken(), p.getTitle(), toInteger(p.getPartySize()), p.getTravelDate(), p.getCoverImageUrl(), selected.size(), region, SHARE_BASE + p.getShareToken(), p.getCreatedAt());
     }
     private PamphletDetail detail(Pamphlet p, List<Place> selected, User author, boolean mine) {
         int onsens = (int) selected.stream().filter(x -> x.getPlaceType() == PlaceType.ONSEN).count();
-        return new PamphletDetail(mine ? p.getId() : null, p.getShareToken(), p.getTitle(), p.getPartySize(), p.getTravelDate(),
+        return new PamphletDetail(mine ? p.getId() : null, p.getShareToken(), p.getTitle(), toInteger(p.getPartySize()), p.getTravelDate(),
                 new PamphletAuthor(author.getNickname(), author.level().number(), author.level().title()), mine, p.getCoverImageUrl(),
                 java.util.stream.IntStream.range(0, selected.size()).mapToObj(i -> placeItem(selected.get(i), i + 1)).toList(),
                 new PamphletSummary(onsens, selected.size(), regionName(selected)), p.getCreatedAt());
+    }
+    private static Integer toInteger(Short value) {
+        return value == null ? null : value.intValue();
     }
     private List<Place> orderedPlaces(Long id) {
         return pamphletPlaces.findByPamphletIdOrderBySortOrder(id).stream().map(x -> places.findById(x.getPlaceId()).orElse(null)).filter(Objects::nonNull).toList();
