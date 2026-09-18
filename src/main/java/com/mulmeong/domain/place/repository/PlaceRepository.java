@@ -16,6 +16,8 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 
     Optional<Place> findBySourceAndExternalId(String source, String externalId);
 
+    Optional<Place> findFirstByPlaceTypeAndNameAndAddress(PlaceType placeType, String name, String address);
+
     @Query("""
             SELECT p FROM Place p
             WHERE p.placeType = com.mulmeong.domain.place.entity.PlaceType.ONSEN

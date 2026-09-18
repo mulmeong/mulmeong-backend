@@ -40,6 +40,32 @@ public class Place extends BaseTimeEntity {
         this.address = address; this.phone = phone;
     }
 
+    public static Place createTourOnsen(String externalId, String name, String address,
+            Double lat, Double lng, String phone, String homepageUrl) {
+        Place place = new Place();
+        place.placeType = PlaceType.ONSEN;
+        place.registeredOnsen = false;
+        place.source = "TOUR_API";
+        place.externalId = externalId;
+        place.name = name;
+        place.address = address;
+        place.lat = lat;
+        place.lng = lng;
+        place.phone = phone;
+        place.homepageUrl = homepageUrl;
+        return place;
+    }
+
+    public void updateTourData(String name, String address, Double lat, Double lng,
+            String phone, String homepageUrl) {
+        this.name = name;
+        this.address = address;
+        this.lat = lat;
+        this.lng = lng;
+        this.phone = phone;
+        this.homepageUrl = homepageUrl;
+    }
+
     public void updateCoordinates(double lat, double lng) {
         this.lat = lat;
         this.lng = lng;
