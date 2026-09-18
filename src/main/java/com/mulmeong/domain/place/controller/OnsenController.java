@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 
 /** PAM-01~06 카드·온천 API. */
 @RestController
-@RequestMapping("/api/v1/onsen")
+@RequestMapping("/api/v1/onsens")
 @RequiredArgsConstructor
 public class OnsenController {
 
