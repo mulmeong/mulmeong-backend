@@ -16,6 +16,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PlaceImage {
 
+    public PlaceImage(Long placeId, String imageUrl, short sortOrder) {
+        this.placeId = placeId; this.imageUrl = imageUrl; this.sortOrder = sortOrder;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

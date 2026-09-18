@@ -25,6 +25,21 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Place extends BaseTimeEntity {
 
+    public static Place createExternal(String source, String externalId, String name,
+            Double lat, Double lng, PlaceType placeType, String address, String phone) {
+        Place place = new Place();
+        place.source = source; place.externalId = externalId; place.name = name;
+        place.lat = lat; place.lng = lng; place.placeType = placeType;
+        place.address = address; place.phone = phone; place.registeredOnsen = false;
+        return place;
+    }
+
+    public void updateExternal(String name, Double lat, Double lng, PlaceType placeType,
+            String address, String phone) {
+        this.name = name; this.lat = lat; this.lng = lng; this.placeType = placeType;
+        this.address = address; this.phone = phone;
+    }
+
     public void updateCoordinates(double lat, double lng) {
         this.lat = lat;
         this.lng = lng;

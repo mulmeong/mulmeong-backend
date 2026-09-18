@@ -10,8 +10,11 @@ import org.springframework.data.repository.query.Param;
 
 import com.mulmeong.domain.place.entity.AccessLevel;
 import com.mulmeong.domain.place.entity.Place;
+import com.mulmeong.domain.place.entity.PlaceType;
 
 public interface PlaceRepository extends JpaRepository<Place, Long> {
+
+    Optional<Place> findBySourceAndExternalId(String source, String externalId);
 
     @Query("""
             SELECT p FROM Place p
