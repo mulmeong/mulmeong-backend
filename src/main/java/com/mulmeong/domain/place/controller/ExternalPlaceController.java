@@ -59,8 +59,9 @@ public class ExternalPlaceController {
     }
 
     @GetMapping("/tour/{externalId}")
-    public TourPlaceDetailResponse tourDetail(@PathVariable String externalId) {
-        return placeClient.findTourDetail(externalId);
+    public TourPlaceDetailResponse tourDetail(@PathVariable String externalId,
+                                              @RequestParam(required = false) Integer contentTypeId) {
+        return placeClient.findTourDetail(externalId, contentTypeId);
     }
 
     @GetMapping("/places/category")

@@ -12,6 +12,7 @@ public record ExternalCategoryPlaceResponse(
 
     public record Item(
             String externalId,
+            Integer contentTypeId,
             String name,
             String categoryName,
             String imageUrl,
