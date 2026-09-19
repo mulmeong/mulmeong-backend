@@ -69,6 +69,20 @@ public class PamphletService {
     }
 
     @Transactional(readOnly = true)
+    public PamphletDetail detail(Long userId, Long pamphletId) {
+        Pamphlet pamphlet = pamphlets.findById(pamphletId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAMPHLET_NOT_FOUND));
+        if (!pamphlet.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        List<Place> selected = orderedPlaces(pamphlet.getId());
+        User author = users.getById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAMPHLET_NOT_FOUND));
+        return detail(pamphlet, selected, author, true);
+    }
+
+    @Transactional(readOnly = true)
     public PamphletDetail shared(String token, Long viewerId) {
         Pamphlet p = pamphlets.findByShareToken(token).orElseThrow(() -> new BusinessException(ErrorCode.PAMPHLET_NOT_FOUND));
         List<Place> selected = orderedPlaces(p.getId());

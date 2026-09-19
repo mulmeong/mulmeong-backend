@@ -27,6 +27,11 @@ public class PamphletController {
         return service.list(userId, page, size);
     }
 
+    @GetMapping("/{pamphletId}")
+    public PamphletDetail detail(@AuthenticationPrincipal Long userId, @PathVariable Long pamphletId) {
+        return service.detail(userId, pamphletId);
+    }
+
     @GetMapping("/share/{shareToken}")
     public PamphletDetail shared(@PathVariable String shareToken, @AuthenticationPrincipal Long userId) {
         return service.shared(shareToken, userId);

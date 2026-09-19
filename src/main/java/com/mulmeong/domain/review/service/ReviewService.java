@@ -81,9 +81,9 @@ public class ReviewService {
         int visitCountAfter = user.getVisitCount();
         if (firstVisit) {
             userService.incrementVisitCount(userId);
+            regionStatService.incrementVisitCount(userId, onsen.sidoCode(), onsen.sigunguCode());
             visitCountAfter++;
         }
-        regionStatService.incrementVisitCount(userId, onsen.sidoCode(), onsen.sigunguCode());
         Level after = Level.from(visitCountAfter);
         return new ReviewCreateResponse(review.getId(), onsenId, visitedAt, review.getCreatedAt(),
                 new ReviewCreateResponse.Reward(firstVisit, onsen.sidoCode(), onsen.sigunguCode(), regionName(onsen),
@@ -126,10 +126,13 @@ public class ReviewService {
         PlaceService.OnsenVisitInfo onsen = placeService.getOnsenVisitInfo(review.getPlaceId());
         review.delete(OffsetDateTime.now());
         reviewRepository.flush();
-        if (!reviewRepository.existsByUserIdAndPlaceIdAndDeletedAtIsNull(userId, review.getPlaceId())) {
+        boolean noRemainingReviewAtOnsen = !reviewRepository.existsByUserIdAndPlaceIdAndDeletedAtIsNull(
+                userId,
+                review.getPlaceId());
+        if (noRemainingReviewAtOnsen) {
             userService.decrementVisitCount(userId);
+            regionStatService.decrementVisitCount(userId, onsen.sigunguCode());
         }
-        regionStatService.decrementVisitCount(userId, onsen.sigunguCode());
     }
 
     @Transactional(readOnly = true)
@@ -176,7 +179,7 @@ public class ReviewService {
                     null,
                     ratings,
                     null,
-                    new OnsenReviewStatsResponse.VisitTime(timeCounts(reviews), null),
+                    toVisitTime(timeCounts(reviews), null),
                     List.of());
         }
         double rating = average(reviews.stream().map(Review::getRating).toList());
@@ -193,7 +196,7 @@ public class ReviewService {
                 new OnsenReviewStatsResponse.Metric(round(crowd), crowdLabel(crowd)),
                 new OnsenReviewStatsResponse.Metric(round(facility), facilityLabel(facility)));
         return new OnsenReviewStatsResponse(onsenId, reviews.size(), round(rating), ratings, specs,
-                new OnsenReviewStatsResponse.VisitTime(times, top), List.of(cleanLabel(clean), top, crowdLabel(crowd)));
+                toVisitTime(times, top), List.of(cleanLabel(clean), top, crowdLabel(crowd)));
     }
 
     private Review ownedReview(Long userId, Long reviewId) {
@@ -281,6 +284,15 @@ public class ReviewService {
         VISIT_TIMES.forEach(time -> counts.put(time, 0L));
         reviews.forEach(review -> counts.compute(review.getVisitTimeSlot(), (key, count) -> count + 1));
         return counts;
+    }
+
+    private OnsenReviewStatsResponse.VisitTime toVisitTime(Map<String, Long> counts, String topLabel) {
+        return new OnsenReviewStatsResponse.VisitTime(
+                counts.getOrDefault("MORNING", 0L),
+                counts.getOrDefault("AFTERNOON", 0L),
+                counts.getOrDefault("EVENING", 0L),
+                counts.getOrDefault("NIGHT", 0L),
+                topLabel);
     }
 
     private double average(List<Short> values) {

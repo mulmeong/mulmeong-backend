@@ -43,11 +43,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 API + "/auth/signup", API + "/auth/login", API + "/auth/reissue", API + "/auth/password/**")
                         .permitAll()
-                        .requestMatchers(HttpMethod.GET,
-                                API + "/auth/email/check", API + "/auth/nickname/check").permitAll()
+                        .requestMatchers(HttpMethod.GET, API + "/auth/email/check").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 API + "/onsens/**", API + "/map/**", API + "/dart/**", API + "/darts/**", API + "/magazines/**",
-                                API + "/pamphlets/share/**", API + "/profiles/**", API + "/external/**")
+                                API + "/pamphlets/share/**", API + "/profiles/**", API + "/external/**", API + "/regions/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 API + "/dart/throw", API + "/dart/reroll",
