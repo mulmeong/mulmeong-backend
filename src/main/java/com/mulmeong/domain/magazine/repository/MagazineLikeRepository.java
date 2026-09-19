@@ -8,6 +8,7 @@ import com.mulmeong.domain.magazine.entity.MagazineLike;
 public interface MagazineLikeRepository extends JpaRepository<MagazineLike, Long> {
     boolean existsByMagazineIdAndUserId(Long magazineId, Long userId);
     Optional<MagazineLike> findByMagazineIdAndUserId(Long magazineId, Long userId);
+    List<MagazineLike> findByUserId(Long userId);
     @Query("select l.magazineId from MagazineLike l where l.userId = :userId and l.magazineId in :magazineIds")
     Set<Long> findLikedMagazineIds(@Param("userId") Long userId, @Param("magazineIds") Collection<Long> magazineIds);
 }

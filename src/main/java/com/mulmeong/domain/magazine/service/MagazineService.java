@@ -59,6 +59,11 @@ public class MagazineService {
             magazineRepository.decrementLikeCount(id);
         });
     }
+    /** 709 탈퇴 시 내 좋아요를 전부 취소한다(like_count 감소 포함). */
+    @Transactional
+    public void unlikeAllByUser(Long userId) {
+        likeRepository.findByUserId(userId).forEach(like -> unlike(like.getMagazineId(), userId));
+    }
     private void requireMagazine(Long id) { if (!magazineRepository.existsById(id)) throw new BusinessException(ErrorCode.MAGAZINE_NOT_FOUND); }
     private MagazineResponse toSummary(Magazine m, boolean liked) { return new MagazineResponse(m.getId(), m.getCategory().name(), m.getCategory().getLabel(), m.getTitle(), m.getSubtitle(), m.getThumbnailUrl(), m.getHeroImageUrl(), m.getSidoCode(), regionName(m.getSidoCode()), m.getReadMinutes(), m.getLikeCount(), liked, m.getPublishedAt()); }
     private MagazineResponse.Place toPlace(Place p) { String image = imageRepository.findByPlaceIdOrderBySortOrder(p.getId()).stream().findFirst().map(i -> i.getImageUrl()).orElse(null); return new MagazineResponse.Place(p.getId(), p.getName(), image, p.getSido(), p.getSigungu(), p.getLat(), p.getLng(), p.getRegionComment(), p.getAccessLevel() == null ? null : p.getAccessLevel().getLabel()); }

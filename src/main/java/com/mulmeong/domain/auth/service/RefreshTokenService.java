@@ -77,6 +77,11 @@ public class RefreshTokenService {
         redisTemplate.opsForSet().remove(USER_KEY_PREFIX + userId, hash);
     }
 
+    /** 비밀번호 변경(706)·탈퇴(709) 시 그 유저의 Refresh Token을 전부 폐기한다. */
+    public void revokeAllForUser(Long userId) {
+        revokeAll(userId);
+    }
+
     private void revokeAll(Long userId) {
         String userKey = USER_KEY_PREFIX + userId;
         Set<String> hashes = redisTemplate.opsForSet().members(userKey);
