@@ -12,6 +12,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -90,8 +93,8 @@ public class MyReviewService {
                         row.getFacilityScore()),
                 row.getBody() == null ? "" : row.getBody(),
                 images,
-                row.getCreatedAt(),
-                row.getUpdatedAt(),
+                toOffsetDateTime(row.getCreatedAt()),
+                toOffsetDateTime(row.getUpdatedAt()),
                 Boolean.TRUE.equals(row.getIsRevisit()));
     }
 
@@ -108,6 +111,10 @@ public class MyReviewService {
                 row.getFirstImage(),
                 row.getVisitedAt(),
                 Boolean.TRUE.equals(row.getIsRevisit()),
-                row.getCreatedAt());
+                toOffsetDateTime(row.getCreatedAt()));
+    }
+
+    private OffsetDateTime toOffsetDateTime(Instant instant) {
+        return instant.atOffset(ZoneOffset.UTC);
     }
 }
