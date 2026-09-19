@@ -17,16 +17,16 @@ public interface MyReviewRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
             SELECT
-              r.id AS reviewId, r.place_id AS onsenId, p.name AS name,
+              r.id AS "reviewId", r.place_id AS "onsenId", p.name AS name,
               p.sido AS sido, p.sigungu AS sigungu,
               (SELECT ri.image_url FROM review_images ri WHERE ri.review_id = r.id ORDER BY ri.sort_order LIMIT 1) AS thumbnail,
               r.rating AS rating, r.body AS body,
-              (SELECT COUNT(*) FROM review_images ri WHERE ri.review_id = r.id) AS imageCount,
-              (SELECT ri.image_url FROM review_images ri WHERE ri.review_id = r.id ORDER BY ri.sort_order LIMIT 1) AS firstImage,
-              r.visited_at AS visitedAt,
+              (SELECT COUNT(*) FROM review_images ri WHERE ri.review_id = r.id) AS "imageCount",
+              (SELECT ri.image_url FROM review_images ri WHERE ri.review_id = r.id ORDER BY ri.sort_order LIMIT 1) AS "firstImage",
+              r.visited_at AS "visitedAt",
               EXISTS (SELECT 1 FROM reviews prev WHERE prev.user_id = r.user_id AND prev.place_id = r.place_id
-                      AND prev.deleted_at IS NULL AND prev.visited_at < r.visited_at) AS isRevisit,
-              r.created_at AS createdAt
+                      AND prev.deleted_at IS NULL AND prev.visited_at < r.visited_at) AS "isRevisit",
+              r.created_at AS "createdAt"
             FROM reviews r JOIN places p ON p.id = r.place_id
             WHERE r.user_id = :userId AND r.deleted_at IS NULL
               AND (:regionCode IS NULL OR p.sido_code = :regionCode OR p.sigungu_code = :regionCode)
@@ -46,7 +46,7 @@ public interface MyReviewRepository extends JpaRepository<User, Long> {
                                     @Param("sortCode") int sortCode, Pageable pageable);
 
     @Query(value = """
-            SELECT p.sido_code AS regionCode, p.sido AS name, COUNT(*) AS count
+            SELECT p.sido_code AS "regionCode", p.sido AS name, COUNT(*) AS count
             FROM reviews r JOIN places p ON p.id = r.place_id
             WHERE r.user_id = :userId AND r.deleted_at IS NULL AND p.sido_code IS NOT NULL
             GROUP BY p.sido_code, p.sido
@@ -56,14 +56,14 @@ public interface MyReviewRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
             SELECT
-              r.id AS reviewId, r.user_id AS userId, r.place_id AS onsenId, p.name AS name,
+              r.id AS "reviewId", r.user_id AS "userId", r.place_id AS "onsenId", p.name AS name,
               p.address AS address, p.lat AS lat, p.lng AS lng,
               (SELECT ri.image_url FROM review_images ri WHERE ri.review_id = r.id ORDER BY ri.sort_order LIMIT 1) AS thumbnail,
-              r.rating AS rating, r.visited_at AS visitedAt, r.visit_time_slot AS visitTimeSlot,
-              r.cleanliness AS cleanliness, r.crowdedness AS crowdedness, r.facility_score AS facilityScore,
-              r.body AS body, r.created_at AS createdAt, r.updated_at AS updatedAt,
+              r.rating AS rating, r.visited_at AS "visitedAt", r.visit_time_slot AS "visitTimeSlot",
+              r.cleanliness AS cleanliness, r.crowdedness AS crowdedness, r.facility_score AS "facilityScore",
+              r.body AS body, r.created_at AS "createdAt", r.updated_at AS "updatedAt",
               EXISTS (SELECT 1 FROM reviews prev WHERE prev.user_id = r.user_id AND prev.place_id = r.place_id
-                      AND prev.deleted_at IS NULL AND prev.visited_at < r.visited_at) AS isRevisit
+                      AND prev.deleted_at IS NULL AND prev.visited_at < r.visited_at) AS "isRevisit"
             FROM reviews r JOIN places p ON p.id = r.place_id
             WHERE r.id = :reviewId AND r.deleted_at IS NULL
             """, nativeQuery = true)
@@ -93,9 +93,9 @@ public interface MyReviewRepository extends JpaRepository<User, Long> {
      * 708 recentOnsens: visited_at 최근순 3곳, 같은 온천 중복 제외.
      */
     @Query(value = """
-            SELECT DISTINCT ON (r.place_id) r.place_id AS onsenId, p.name AS name,
+            SELECT DISTINCT ON (r.place_id) r.place_id AS "onsenId", p.name AS name,
               (SELECT ri.image_url FROM review_images ri WHERE ri.review_id = r.id ORDER BY ri.sort_order LIMIT 1) AS thumbnail,
-              r.visited_at AS visitedAt
+              r.visited_at AS "visitedAt"
             FROM reviews r JOIN places p ON p.id = r.place_id
             WHERE r.user_id = :userId AND r.deleted_at IS NULL
             ORDER BY r.place_id, r.visited_at DESC
