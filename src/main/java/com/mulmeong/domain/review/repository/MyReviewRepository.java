@@ -11,11 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.mulmeong.domain.user.entity.User;
 
-/**
- * reviews는 아직 JPA 엔티티로 모델링되지 않았다(601~606 리뷰 작성/수정/삭제 API 미구현, {@link
- * com.mulmeong.domain.place.repository.ReviewAggregateRepository}와 같은 이유). 마이페이지
- * 701~705·709 조회 전용 네이티브 쿼리만 여기 둔다.
- */
+/** 701~705·709용 읽기 최적화 네이티브 쿼리. 601~606의 쓰기 로직은 {@link ReviewRepository}가 담당한다. */
 public interface MyReviewRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
