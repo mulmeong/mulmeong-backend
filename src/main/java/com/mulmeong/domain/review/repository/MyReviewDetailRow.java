@@ -1,7 +1,7 @@
 package com.mulmeong.domain.review.repository;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 
 /**
  * 705(내 리뷰 상세) 네이티브 쿼리 투영.
@@ -37,9 +37,9 @@ public interface MyReviewDetailRow {
 
     String getBody();
 
-    OffsetDateTime getCreatedAt();
+    Instant getCreatedAt();
 
-    OffsetDateTime getUpdatedAt();
+    Instant getUpdatedAt();
 
     Boolean getIsRevisit();
 }
