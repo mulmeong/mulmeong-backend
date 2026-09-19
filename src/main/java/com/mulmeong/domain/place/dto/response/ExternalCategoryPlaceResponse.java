@@ -14,12 +14,12 @@ public record ExternalCategoryPlaceResponse(
             String externalId,
             String name,
             String categoryName,
+            String imageUrl,
             String roadAddress,
             String phone,
             Double lat,
             Double lng,
-            Integer distanceM,
-            String kakaoPlaceUrl
+            Integer distanceM
     ) {
     }
 }

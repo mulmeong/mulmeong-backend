@@ -1,5 +1,6 @@
 package com.mulmeong.domain.place.service;
 
+import com.mulmeong.domain.dart.repository.DartCandidateRepository;
 import com.mulmeong.domain.favorite.service.FavoriteService;
 import com.mulmeong.domain.place.dto.request.NearbyRerollRequest;
 import com.mulmeong.domain.place.dto.response.*;
@@ -43,6 +44,7 @@ public class PlaceService {
     private final PlaceImageRepository placeImageRepository;
     private final ReviewAggregateRepository reviewAggregateRepository;
     private final FavoriteService favoriteService;
+    private final DartCandidateRepository dartCandidateRepository;
     private final ExternalPlaceClient externalPlaceClient;
     private final ExternalDirectionsClient externalDirectionsClient;
 
@@ -157,9 +159,7 @@ public class PlaceService {
                 .map(PlaceImage::getImageUrl)
                 .toList();
         AccessLevel accessLevel = place.getAccessLevel();
-        OnsenDetailResponse.NearestStation nearestStation = place.getStation() == null ? null
-                : new OnsenDetailResponse.NearestStation(place.getStation().getName(), place.getStation().getLat(),
-                place.getStation().getLng(), place.getStationToPlaceDesc());
+        OnsenDetailResponse.NearestStation nearestStation = accessStation(onsenId);
         boolean isFavorite = favoriteService.getFavoritePlaceIds(userId, List.of(onsenId)).contains(onsenId);
         return new OnsenDetailResponse(
                 place.getId(), place.getName(), place.isRegisteredOnsen(),
@@ -175,7 +175,7 @@ public class PlaceService {
                         accessLevel == null ? null : accessLevel.name(),
                         accessLevel == null ? null : accessLevel.getLabel(),
                         nearestStation),
-                place.getAnnualVisitors(), images, images.stream().findFirst().orElse(null),
+                trustedAnnualVisitors(place.getAnnualVisitors()), images, images.stream().findFirst().orElse(null),
                 place.getRegionComment(), place.getNotes(),
                 isFavorite, reviewSummary(onsenId));
     }
@@ -332,6 +332,21 @@ public class PlaceService {
             throw new BusinessException(ErrorCode.ONSEN_NOT_FOUND);
         }
         return place;
+    }
+
+    private OnsenDetailResponse.NearestStation accessStation(Long onsenId) {
+        return dartCandidateRepository.findFirstByPlace_IdOrderById(onsenId)
+                .filter(candidate -> candidate.getStationName() != null && !candidate.getStationName().isBlank())
+                .map(candidate -> new OnsenDetailResponse.NearestStation(
+                        candidate.getStationName(), null, null, candidate.getStationToPlace()))
+                .orElse(null);
+    }
+
+    private Integer trustedAnnualVisitors(Integer annualVisitors) {
+        if (annualVisitors == null || annualVisitors <= 0) {
+            return null;
+        }
+        return annualVisitors;
     }
 
     /**

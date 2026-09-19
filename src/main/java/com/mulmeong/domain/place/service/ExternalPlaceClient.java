@@ -99,8 +99,9 @@ public class ExternalPlaceClient {
                 .filter(item -> category.matchesTitle(item.name()))
                 .limit(size)
                 .map(item -> new ExternalCategoryPlaceResponse.Item(
-                        item.externalId(), item.name(), tourCategoryName(item.contentTypeId()), item.address(), null,
-                        item.lat(), item.lng(), item.distanceM(), null))
+                        item.externalId(), item.name(), tourCategoryName(item.contentTypeId()), item.imageUrl(),
+                        item.address(), null,
+                        item.lat(), item.lng(), item.distanceM()))
                 .toList();
         return new ExternalCategoryPlaceResponse(category.name(), items);
     }
