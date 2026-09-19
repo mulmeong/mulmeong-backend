@@ -7,10 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 
-/**
- * password_reset_tokens 테이블. AUTH-03(비밀번호 재설정)은 이번 작업 범위 밖 —
- * 스키마와 맞는 엔티티만 미리 만들어 둔다.
- */
 @Getter
 @Entity
 @Table(name = "password_reset_tokens")
@@ -38,4 +34,23 @@ public class PasswordResetToken {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
+
+    public PasswordResetToken(Long userId, String tokenHash, OffsetDateTime expiresAt) {
+        this.userId = userId;
+        this.tokenHash = tokenHash;
+        this.expiresAt = expiresAt;
+        this.createdAt = OffsetDateTime.now();
+    }
+
+    public boolean isExpired(OffsetDateTime now) {
+        return !expiresAt.isAfter(now);
+    }
+
+    public boolean isUsed() {
+        return usedAt != null;
+    }
+
+    public void markUsed(OffsetDateTime usedAt) {
+        this.usedAt = usedAt;
+    }
 }

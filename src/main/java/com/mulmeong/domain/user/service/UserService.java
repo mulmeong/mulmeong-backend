@@ -191,6 +191,15 @@ public class UserService {
         user.changePassword(passwordEncoder.encode(newPassword));
     }
 
+    @Transactional
+    public void resetPassword(Long userId, String newPassword) {
+        User user = requireActiveUser(userId);
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new BusinessException(ErrorCode.SAME_AS_OLD_PASSWORD);
+        }
+        user.changePassword(passwordEncoder.encode(newPassword));
+    }
+
     /**
      * 709: 탈퇴. users 테이블 자체의 소프트 삭제만 담당 — 찜/팜플렛/포도알 등 다른 도메인 정리는 호출자(orchestrator)의 몫.
      */
