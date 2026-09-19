@@ -159,13 +159,13 @@ public class ExternalPlaceClient {
             JsonNode source = responseBody.path("items").path("item");
             if (source.isArray()) {
                 for (JsonNode item : source) {
-                    String image = text(item, "firstimage");
+                    String image = secureImageUrl(text(item, "firstimage"));
                     if (withImageOnly && image == null) {
                         continue;
                     }
                     items.add(new TourNearbyResponse.Item("TOUR_" + text(item, "contentid"),
                             text(item, "contentid"), integer(item, "contenttypeid"), text(item, "title"),
-                            text(item, "overview"), image, text(item, "firstimage2"), joinAddress(item),
+                            text(item, "overview"), image, secureImageUrl(text(item, "firstimage2")), joinAddress(item),
                             text(item, "tel"), text(item, "homepage"), decimal(item, "mapy"), decimal(item, "mapx"),
                             meters(item, "dist")));
                 }
@@ -190,13 +190,15 @@ public class ExternalPlaceClient {
                     .queryParam("MobileApp", "mulmeong").queryParam("contentId", contentId)
                     .queryParam("defaultYN", "Y").queryParam("overviewYN", "Y")
                     .queryParam("_type", "json").build()).retrieve().body(String.class);
-            JsonNode item = objectMapper.readTree(body).path("response").path("body").path("items").path("item").path(0);
-            if (item.isMissingNode()) {
+            JsonNode source = objectMapper.readTree(body).path("response").path("body").path("items").path("item");
+            JsonNode item = source.isArray() ? source.path(0) : source;
+            if (item.isMissingNode() || item.isNull() || item.isTextual()) {
                 throw new BusinessException(ErrorCode.PLACE_NOT_FOUND);
             }
             return new TourPlaceDetailResponse(
                     "TOUR_" + contentId, contentId, integer(item, "contenttypeid"), text(item, "title"),
-                    text(item, "overview"), text(item, "firstimage"), text(item, "firstimage2"), joinAddress(item),
+                    text(item, "overview"), secureImageUrl(text(item, "firstimage")),
+                    secureImageUrl(text(item, "firstimage2")), joinAddress(item),
                     text(item, "tel"), text(item, "homepage"), decimal(item, "mapy"), decimal(item, "mapx")
             );
         } catch (BusinessException e) {
@@ -229,7 +231,7 @@ public class ExternalPlaceClient {
                 return result;
             }
             for (JsonNode item : items) {
-                String image = text(item, "firstimage");
+                String image = secureImageUrl(text(item, "firstimage"));
                 if (image == null || ("cafe".equals(category) && !isCafe(item))) {
                     continue;
                 }
@@ -278,6 +280,13 @@ public class ExternalPlaceClient {
     private static String text(JsonNode node, String field) {
         String value = node.path(field).asText(null);
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private static String secureImageUrl(String imageUrl) {
+        if (imageUrl != null && imageUrl.startsWith("http://tong.visitkorea.or.kr/")) {
+            return "https://" + imageUrl.substring("http://".length());
+        }
+        return imageUrl;
     }
 
     private static Double decimal(JsonNode node, String field) {
