@@ -16,18 +16,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 702(포도알 지도), 708 공개 프로필의 지역 요약, 701/708의 grapeRegionCount.
- * 시·도(SIDO) 레벨은 17개 고정 목록으로 0방문 지역까지 채운다. 시군구(SIGUNGU) 레벨은
- * 프론트 GeoJSON과 코드가 맞아야 하는 전국 시군구 마스터가 아직 없어, region_stats에
- * 실제로 있는 행만 내려준다 — 0방문 시군구 채우기는 그 마스터 데이터가 준비되면 추가한다.
- */
+// 702(포도알 지도), 708 공개 프로필의 지역 요약, 701/708의 grapeRegionCount.
 @Service
 @RequiredArgsConstructor
 public class RegionStatService {
 
     private final RegionStatRepository regionStatRepository;
     private final MyReviewService myReviewService;
+    private final SigunguRegionService sigunguRegionService;
 
     @Transactional(readOnly = true)
     public long grapeRegionCount(Long userId) {
@@ -85,21 +81,27 @@ public class RegionStatService {
         List<RegionStat> rows = parentRegionCode != null
                 ? regionStatRepository.findByUserIdAndSidoCode(userId, parentRegionCode)
                 : regionStatRepository.findByUserId(userId);
+        Map<String, RegionStat> statsBySigunguCode = rows.stream()
+                .collect(java.util.stream.Collectors.toMap(RegionStat::getSigunguCode, stat -> stat));
+        List<SigunguRegionService.SigunguRegion> sigungus = parentRegionCode != null
+                ? sigunguRegionService.findBySidoCode(parentRegionCode)
+                : sigunguRegionService.findAll();
 
         int max = rows.stream().mapToInt(RegionStat::getVisitCount).max().orElse(0);
         List<GrapeMapResponse.RegionItem> regions = new ArrayList<>();
         long visited = 0;
-        for (RegionStat row : rows) {
-            int count = row.getVisitCount();
+        for (SigunguRegionService.SigunguRegion sigungu : sigungus) {
+            RegionStat stat = statsBySigunguCode.get(sigungu.code());
+            int count = stat == null ? 0 : stat.getVisitCount();
             if (count > 0) visited++;
             double density = max == 0 ? 0.0 : (double) count / max;
             List<Long> onsenIds = count == 0
                     ? List.of()
-                    : myReviewService.distinctOnsenIdsByUserAndSigungu(userId, row.getSigunguCode());
-            regions.add(new GrapeMapResponse.RegionItem(row.getSigunguCode(), row.getSigunguCode(), count, density,
+                    : myReviewService.distinctOnsenIdsByUserAndSigungu(userId, sigungu.code());
+            regions.add(new GrapeMapResponse.RegionItem(sigungu.code(), sigungu.name(), count, density,
                     onsenIds));
         }
-        return new GrapeMapResponse("SIGUNGU", visited, regions.size(), max, regions);
+        return new GrapeMapResponse("SIGUNGU", visited, sigungus.size(), max, regions);
     }
 
     private Map<String, Integer> sumBySido(Long userId) {
