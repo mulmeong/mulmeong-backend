@@ -93,6 +93,12 @@ public class DartService {
                 toResult(request, result, minutes));
     }
 
+    /** 709 탈퇴: 다트 기록은 남기되 회원 연결만 끊는다. */
+    @Transactional
+    public void anonymizeUserId(Long userId) {
+        jdbcTemplate.update("UPDATE dart_logs SET user_id = NULL WHERE user_id = ?", userId);
+    }
+
     public List<OriginResponse> origins() {
         return List.of(new OriginResponse("서울역", 37.5563, 126.9723), new OriginResponse("수원역", 37.2659, 127.0001),
                 new OriginResponse("대전역", 36.3323, 127.4345), new OriginResponse("대구역", 35.8760, 128.5960),

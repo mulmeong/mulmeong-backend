@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mulmeong.domain.auth.service.RefreshTokenService;
+import com.mulmeong.domain.dart.service.DartService;
 import com.mulmeong.domain.favorite.service.FavoriteService;
 import com.mulmeong.domain.magazine.service.MagazineService;
 import com.mulmeong.domain.pamphlet.service.PamphletService;
@@ -40,6 +41,7 @@ public class MyProfileService {
     private final MyReviewService myReviewService;
     private final RegionStatService regionStatService;
     private final MagazineService magazineService;
+    private final DartService dartService;
     private final RefreshTokenService refreshTokenService;
 
     @Transactional(readOnly = true)
@@ -117,7 +119,7 @@ public class MyProfileService {
                 user.getCreatedAt().toLocalDate());
     }
 
-    /** 709. 남긴 리뷰는 유지 — 찜·팜플렛·매거진 좋아요·포도알만 정리한다. */
+    /** 709. 남긴 리뷰·다트 기록은 유지하되 회원 연결만 끊는다 — 찜·팜플렛·매거진 좋아요·포도알은 삭제. */
     @Transactional
     public void withdraw(Long userId, String password) {
         userService.withdraw(userId, password);
@@ -125,6 +127,7 @@ public class MyProfileService {
         pamphletService.deleteAllByUserId(userId);
         regionStatService.deleteAllByUserId(userId);
         magazineService.unlikeAllByUser(userId);
+        dartService.anonymizeUserId(userId);
         refreshTokenService.revokeAllForUser(userId);
     }
 
