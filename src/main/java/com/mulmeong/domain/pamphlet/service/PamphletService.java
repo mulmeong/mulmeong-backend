@@ -71,6 +71,13 @@ public class PamphletService {
         pamphlets.delete(p);
     }
 
+    @Transactional(readOnly = true)
+    public long countByUserId(Long userId) { return pamphlets.findByUserIdOrderByCreatedAtDesc(userId).size(); }
+
+    /** 709 탈퇴. pamphlet_places는 DB의 ON DELETE CASCADE로 함께 삭제된다. */
+    @Transactional
+    public void deleteAllByUserId(Long userId) { pamphlets.deleteByUserId(userId); }
+
     private PamphletListItem listItem(Pamphlet p) {
         List<Place> selected = orderedPlaces(p.getId());
         String region = regionName(selected);

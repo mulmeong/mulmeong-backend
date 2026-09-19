@@ -78,6 +78,10 @@ public class FavoriteService {
 
     @Transactional
     public void delete(Long userId, Long placeId) { favorites.deleteByUserIdAndPlaceId(userId, placeId); }
+    @Transactional(readOnly = true)
+    public long countByUserId(Long userId) { return favorites.countByUserId(userId); }
+    @Transactional
+    public void deleteAllByUserId(Long userId) { favorites.deleteByUserId(userId); }
     private Place findPlace(Long id) { return places.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.PLACE_NOT_FOUND)); }
     private FavoriteCreateResponse response(Favorite f) { return new FavoriteCreateResponse(f.getId(), f.getPlaceId(), true, f.getCreatedAt()); }
     private FavoriteItem item(Favorite f) {

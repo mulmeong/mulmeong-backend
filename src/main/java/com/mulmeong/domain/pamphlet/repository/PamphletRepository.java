@@ -8,4 +8,5 @@ public interface PamphletRepository extends JpaRepository<Pamphlet, Long> {
     List<Pamphlet> findByUserIdOrderByCreatedAtDesc(Long userId);
     Optional<Pamphlet> findByShareToken(String shareToken);
     boolean existsByShareToken(String shareToken);
+    void deleteByUserId(Long userId);
 }

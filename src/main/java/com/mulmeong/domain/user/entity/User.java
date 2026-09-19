@@ -89,4 +89,24 @@ public class User extends BaseTimeEntity {
     public Level level() {
         return Level.from(visitCount);
     }
+
+    /** MY-07 닉네임 변경. 30일 제한은 서비스 레이어에서 nicknameChangedAt으로 판단한다. */
+    public void changeNickname(String nickname, OffsetDateTime changedAt) {
+        this.nickname = nickname;
+        this.nicknameChangedAt = changedAt;
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    /** MY-10 탈퇴 (소프트 삭제). 이메일·닉네임은 UNIQUE라 재가입 가능하도록 충돌 회피 값으로 바꾼다. */
+    public void withdraw(OffsetDateTime withdrawnAt) {
+        this.email = "deleted_" + id + "@mulmeong.invalid";
+        this.name = "탈퇴한 사용자";
+        this.phone = "000-0000-0000";
+        this.nickname = "deleted_" + id;
+        this.profileShareToken = null;
+        this.deletedAt = withdrawnAt;
+    }
 }

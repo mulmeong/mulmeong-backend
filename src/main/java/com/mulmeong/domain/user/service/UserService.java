@@ -1,6 +1,8 @@
 package com.mulmeong.domain.user.service;
 
 //import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import com.mulmeong.domain.user.dto.response.NicknameCheckResponse;
@@ -23,6 +25,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+    /** MY-07: 닉네임은 마지막 변경 후 30일이 지나야 다시 바꿀 수 있다. */
+    private static final Duration NICKNAME_CHANGE_COOLDOWN = Duration.ofDays(30);
 
 //    private static final String NICKNAME_PREFIX = "물멍러";
 //    private static final SecureRandom RANDOM = new SecureRandom();
@@ -91,6 +96,65 @@ public class UserService {
     @Transactional(readOnly = true)
     public Optional<User> getById(Long id) {
         return userRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<User> getByProfileShareToken(String token) {
+        return userRepository.findByProfileShareToken(token);
+    }
+
+    /** 30일 이내 변경했으면 다음 변경 가능 시각, 아니면 null (지금 바로 가능). */
+    public OffsetDateTime nicknameEditableAt(User user) {
+        if (user.getNicknameChangedAt() == null) return null;
+        OffsetDateTime editableAt = user.getNicknameChangedAt().plus(NICKNAME_CHANGE_COOLDOWN);
+        return editableAt.isAfter(OffsetDateTime.now()) ? editableAt : null;
+    }
+
+    /** 706-①: 닉네임 변경. */
+    @Transactional
+    public User changeNickname(Long userId, String nickname) {
+        User user = requireActiveUser(userId);
+        OffsetDateTime editableAt = nicknameEditableAt(user);
+        if (editableAt != null) {
+            throw new BusinessException(ErrorCode.NICKNAME_CHANGE_TOO_SOON);
+        }
+        if (userRepository.existsByNickname(nickname)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+        user.changeNickname(nickname, OffsetDateTime.now());
+        return user;
+    }
+
+    /** 706-②: 비밀번호 변경. */
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword, String newPasswordConfirm) {
+        User user = requireActiveUser(userId);
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new BusinessException(ErrorCode.CURRENT_PASSWORD_MISMATCH);
+        }
+        if (!newPassword.equals(newPasswordConfirm)) {
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
+        }
+        user.changePassword(passwordEncoder.encode(newPassword));
+    }
+
+    /** 709: 탈퇴. users 테이블 자체의 소프트 삭제만 담당 — 찜/팜플렛/포도알 등 다른 도메인 정리는 호출자(orchestrator)의 몫. */
+    @Transactional
+    public void withdraw(Long userId, String password) {
+        User user = requireActiveUser(userId);
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BusinessException(ErrorCode.CURRENT_PASSWORD_MISMATCH);
+        }
+        user.withdraw(OffsetDateTime.now());
+    }
+
+    private User requireActiveUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.isWithdrawn()) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        return user;
     }
 
 //    private String generateNickname() {

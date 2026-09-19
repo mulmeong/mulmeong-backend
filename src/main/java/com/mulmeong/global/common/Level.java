@@ -35,4 +35,19 @@ public enum Level {
     public String title() {
         return title;
     }
+
+    public int minVisits() {
+        return min;
+    }
+
+    /** 다음 레벨의 최소 방문 수. 최고 레벨이면 null. */
+    public Integer nextLevelMin() {
+        Level[] values = values();
+        int next = ordinal() + 1;
+        return next < values.length ? values[next].min : null;
+    }
+
+    public boolean isMaxLevel() {
+        return this == LV5;
+    }
 }
