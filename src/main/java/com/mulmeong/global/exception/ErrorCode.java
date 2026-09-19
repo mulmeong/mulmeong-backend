@@ -30,6 +30,12 @@ public enum ErrorCode {
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다"),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다"),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다"),
+    NICKNAME_CHANGE_TOO_SOON(HttpStatus.CONFLICT, "닉네임은 마지막 변경 후 30일이 지나야 다시 변경할 수 있습니다"),
+    CURRENT_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "현재 비밀번호가 올바르지 않습니다"),
+    MIXED_UPDATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "닉네임과 비밀번호는 한 번에 변경할 수 없습니다"),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
+    REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 리뷰입니다"),
+    INVALID_REGION_CODE(HttpStatus.BAD_REQUEST, "존재하지 않는 지역 코드입니다"),
 
     // Map / Place
     INVALID_BBOX(HttpStatus.BAD_REQUEST, "지도 영역이 올바르지 않습니다"),
