@@ -110,7 +110,7 @@ public class MyProfileService {
                 viewerId != null && viewerId.equals(user.getId()),
                 user.getVisitCount(),
                 regionStatService.grapeRegionCount(user.getId()),
-                regions.size(),
+                com.mulmeong.domain.region.entity.Sido.values().length,
                 regions,
                 recentOnsens,
                 PROFILE_SHARE_BASE + user.getProfileShareToken(),

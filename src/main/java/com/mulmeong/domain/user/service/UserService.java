@@ -85,11 +85,17 @@ public class UserService {
      * 닉네임 사용 가능 여부.
      */
     @Transactional(readOnly = true)
+    public NicknameCheckResponse checkNickname(Long userId, String nickname) {
+        User user = requireActiveUser(userId);
+        OffsetDateTime editableAt = nicknameEditableAt(user);
+        boolean available = nickname.equals(user.getNickname()) || !userRepository.existsByNickname(nickname);
+        return new NicknameCheckResponse(nickname, available, editableAt == null, editableAt);
+    }
+
+    /** 기존 단위 테스트와 가입 전 중복 확인 호환용. API 108은 사용자 정보를 포함하는 위 메서드를 사용한다. */
+    @Transactional(readOnly = true)
     public NicknameCheckResponse checkNickname(String nickname) {
-        return new NicknameCheckResponse(
-                nickname,
-                !userRepository.existsByNickname(nickname)
-        );
+        return new NicknameCheckResponse(nickname, !userRepository.existsByNickname(nickname), true, null);
     }
 
     /**

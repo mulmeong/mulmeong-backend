@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,10 +47,11 @@ public class UserController {
      */
     @GetMapping("/nickname/check")
     public NicknameCheckResponse checkNickname(
+            @AuthenticationPrincipal Long userId,
             @RequestParam
-            @Size(min = 2, max = 10, message = "닉네임은 2~10자로 입력해주세요")
+            @Size(min = 2, max = 12, message = "닉네임은 2~12자로 입력해주세요")
             String nickname
     ) {
-        return userService.checkNickname(nickname);
+        return userService.checkNickname(userId, nickname);
     }
 }

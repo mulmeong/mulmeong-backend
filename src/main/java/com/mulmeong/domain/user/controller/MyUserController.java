@@ -14,6 +14,8 @@ import com.mulmeong.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,6 +67,13 @@ public class MyUserController {
     public ResponseEntity<Void> withdraw(@AuthenticationPrincipal Long userId,
                                          @Valid @RequestBody WithdrawRequest request) {
         myProfileService.withdraw(userId, request.password());
-        return ResponseEntity.noContent().build();
+        ResponseCookie expiredRefreshToken = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .path("/api/v1/auth")
+                .maxAge(0)
+                .build();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, expiredRefreshToken.toString())
+                .build();
     }
 }
