@@ -1,16 +1,14 @@
 package com.mulmeong.global.security;
 
-import java.io.IOException;
-
+import com.mulmeong.global.exception.ErrorCode;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
-import com.mulmeong.global.exception.ErrorCode;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * 인증이 필요한 엔드포인트에 토큰 없이/무효 토큰으로 접근했을 때 401을 공통 에러 포맷으로 내려준다.

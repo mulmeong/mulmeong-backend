@@ -2,7 +2,9 @@ package com.mulmeong.domain.place.dto.response;
 
 import java.util.List;
 
-/** API-301 응답. clustered=true면 markers는 비고 clusters만 채워진다 (그 반대도 마찬가지). */
+/**
+ * API-301 응답. clustered=true면 markers는 비고 clusters만 채워진다 (그 반대도 마찬가지).
+ */
 public record MapOnsensResponse(
         Bbox bbox,
         boolean clustered,

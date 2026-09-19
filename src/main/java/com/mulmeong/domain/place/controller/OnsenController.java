@@ -1,27 +1,16 @@
 package com.mulmeong.domain.place.controller;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestBody;
-
-import jakarta.validation.Valid;
-
-import com.mulmeong.domain.place.dto.response.OnsenCardResponse;
-import com.mulmeong.domain.place.dto.response.OnsenListResponse;
-import com.mulmeong.domain.place.dto.response.OnsenDetailResponse;
-import com.mulmeong.domain.place.dto.response.OnsenDirectionsResponse;
-import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
 import com.mulmeong.domain.place.dto.request.NearbyRerollRequest;
+import com.mulmeong.domain.place.dto.response.*;
 import com.mulmeong.domain.place.service.PlaceService;
-
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
-/** PAM-01~06 카드·온천 API. */
+/**
+ * PAM-01~06 카드·온천 API.
+ */
 @RestController
 @RequestMapping("/api/v1/onsens")
 @RequiredArgsConstructor

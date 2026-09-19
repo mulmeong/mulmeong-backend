@@ -2,7 +2,9 @@ package com.mulmeong.domain.user.dto.response;
 
 import java.time.OffsetDateTime;
 
-/** 701 GET /users/me. 이 API만 예외적으로 email을 내려준다. */
+/**
+ * 701 GET /users/me. 이 API만 예외적으로 email을 내려준다.
+ */
 public record MyProfileResponse(
         Long userId,
         String email,

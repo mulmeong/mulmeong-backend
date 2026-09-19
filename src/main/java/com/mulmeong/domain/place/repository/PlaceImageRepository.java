@@ -1,10 +1,9 @@
 package com.mulmeong.domain.place.repository;
 
-import java.util.List;
-
+import com.mulmeong.domain.place.entity.PlaceImage;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.mulmeong.domain.place.entity.PlaceImage;
+import java.util.List;
 
 public interface PlaceImageRepository extends JpaRepository<PlaceImage, Long> {
 

@@ -1,13 +1,13 @@
 package com.mulmeong.global.seed;
 
-import javax.sql.DataSource;
-
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
+
+import javax.sql.DataSource;
 
 /**
  * seed 프로필이 켜졌을 때만 동작. 스크립트는 전부 (source, external_id) / name 기준

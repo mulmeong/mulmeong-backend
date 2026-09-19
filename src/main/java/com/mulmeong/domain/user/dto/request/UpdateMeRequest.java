@@ -3,7 +3,9 @@ package com.mulmeong.domain.user.dto.request;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/** 706 PATCH /users/me. 닉네임 변경과 비밀번호 변경 중 하나만 채워서 보낸다 (동시 전송 금지). */
+/**
+ * 706 PATCH /users/me. 닉네임 변경과 비밀번호 변경 중 하나만 채워서 보낸다 (동시 전송 금지).
+ */
 public record UpdateMeRequest(
         @Pattern(regexp = "^[가-힣a-zA-Z0-9]{2,12}$", message = "닉네임은 2~12자의 한글·영문·숫자만 가능합니다")
         String nickname,

@@ -1,21 +1,19 @@
 package com.mulmeong.domain.auth.service;
 
+import com.mulmeong.domain.auth.jwt.JwtTokenProvider;
+import com.mulmeong.global.exception.BusinessException;
+import com.mulmeong.global.exception.ErrorCode;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Set;
-
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-
-import com.mulmeong.global.exception.BusinessException;
-import com.mulmeong.global.exception.ErrorCode;
-import com.mulmeong.domain.auth.jwt.JwtTokenProvider;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import lombok.RequiredArgsConstructor;
 
 /**
  * Refresh Token은 JWT(서명으로 만료·위조 검증 + userId 추출)면서, 원문의 SHA-256 해시를
@@ -39,7 +37,9 @@ public class RefreshTokenService {
         return new TokenPair(accessToken, refreshToken, jwtTokenProvider.accessTokenExpireSeconds());
     }
 
-    /** 검증 + 회전. 재사용(이미 폐기된 토큰) 시 해당 유저의 모든 Refresh Token을 폐기하고 예외를 던진다. */
+    /**
+     * 검증 + 회전. 재사용(이미 폐기된 토큰) 시 해당 유저의 모든 Refresh Token을 폐기하고 예외를 던진다.
+     */
     public Long rotate(String rawRefreshToken) {
         Claims claims;
         try {
@@ -66,7 +66,9 @@ public class RefreshTokenService {
         return userId;
     }
 
-    /** 로그아웃. 토큰이 이미 없거나 무효해도 조용히 무시한다(멱등). */
+    /**
+     * 로그아웃. 토큰이 이미 없거나 무효해도 조용히 무시한다(멱등).
+     */
     public void revoke(String rawRefreshToken) {
         String hash = sha256(rawRefreshToken);
         String userId = redisTemplate.opsForValue().get(TOKEN_KEY_PREFIX + hash);
@@ -77,7 +79,9 @@ public class RefreshTokenService {
         redisTemplate.opsForSet().remove(USER_KEY_PREFIX + userId, hash);
     }
 
-    /** 비밀번호 변경(706)·탈퇴(709) 시 그 유저의 Refresh Token을 전부 폐기한다. */
+    /**
+     * 비밀번호 변경(706)·탈퇴(709) 시 그 유저의 Refresh Token을 전부 폐기한다.
+     */
     public void revokeAllForUser(Long userId) {
         revokeAll(userId);
     }

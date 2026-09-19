@@ -1,26 +1,37 @@
 package com.mulmeong.domain.favorite.service;
 
+import com.mulmeong.domain.favorite.dto.request.FavoriteCreateRequest;
+import com.mulmeong.domain.favorite.dto.response.FavoriteCounts;
+import com.mulmeong.domain.favorite.dto.response.FavoriteCreateResponse;
+import com.mulmeong.domain.favorite.dto.response.FavoriteItem;
+import com.mulmeong.domain.favorite.dto.response.FavoriteListResponse;
+import com.mulmeong.domain.favorite.entity.Favorite;
+import com.mulmeong.domain.favorite.repository.FavoriteRepository;
+import com.mulmeong.domain.place.entity.Place;
+import com.mulmeong.domain.place.entity.PlaceImage;
+import com.mulmeong.domain.place.entity.PlaceType;
+import com.mulmeong.domain.place.repository.PlaceImageRepository;
+import com.mulmeong.domain.place.repository.PlaceRepository;
+import com.mulmeong.global.exception.BusinessException;
+import com.mulmeong.global.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.mulmeong.domain.favorite.dto.request.FavoriteCreateRequest;
-import com.mulmeong.domain.favorite.dto.response.*;
-import com.mulmeong.domain.favorite.entity.Favorite;
-import com.mulmeong.domain.favorite.repository.FavoriteRepository;
-import com.mulmeong.domain.place.entity.*;
-import com.mulmeong.domain.place.repository.*;
-import com.mulmeong.global.exception.*;
-import lombok.RequiredArgsConstructor;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class FavoriteService {
     private final FavoriteRepository favorites;
     private final PlaceRepository places;
     private final PlaceImageRepository images;
 
-    /** 지도/온천 응답에서 사용하는 기존 조회 계약을 유지한다. */
+    /**
+     * 지도/온천 응답에서 사용하는 기존 조회 계약을 유지한다.
+     */
     @Transactional(readOnly = true)
     public Set<Long> getFavoritePlaceIds(Long userId, List<Long> placeIds) {
         if (userId == null || placeIds.isEmpty()) return Set.of();
@@ -77,26 +88,60 @@ public class FavoriteService {
     }
 
     @Transactional
-    public void delete(Long userId, Long placeId) { favorites.deleteByUserIdAndPlaceId(userId, placeId); }
+    public void delete(Long userId, Long placeId) {
+        favorites.deleteByUserIdAndPlaceId(userId, placeId);
+    }
+
     @Transactional(readOnly = true)
-    public long countByUserId(Long userId) { return favorites.countByUserId(userId); }
+    public long countByUserId(Long userId) {
+        return favorites.countByUserId(userId);
+    }
+
     @Transactional
-    public void deleteAllByUserId(Long userId) { favorites.deleteByUserId(userId); }
-    private Place findPlace(Long id) { return places.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.PLACE_NOT_FOUND)); }
-    private FavoriteCreateResponse response(Favorite f) { return new FavoriteCreateResponse(f.getId(), f.getPlaceId(), true, f.getCreatedAt()); }
+    public void deleteAllByUserId(Long userId) {
+        favorites.deleteByUserId(userId);
+    }
+
+    private Place findPlace(Long id) {
+        return places.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.PLACE_NOT_FOUND));
+    }
+
+    private FavoriteCreateResponse response(Favorite f) {
+        return new FavoriteCreateResponse(f.getId(), f.getPlaceId(), true, f.getCreatedAt());
+    }
+
     private FavoriteItem item(Favorite f) {
         Place p = findPlace(f.getPlaceId());
         String thumbnail = images.findByPlaceIdOrderBySortOrder(p.getId()).stream().findFirst().map(i -> i.getImageUrl()).orElse(null);
         String sub = p.getPlaceType() == PlaceType.ONSEN
                 ? (p.getWaterTemp() == null ? "" : p.getWaterTemp() + "℃") + (p.getWaterType() == null ? "" : " · " + p.getWaterType())
-                : switch (p.getPlaceType()) { case RESTAURANT -> "식당"; case CAFE -> "카페"; case ATTRACTION -> "관광지"; case SPA -> "스파"; default -> "기타"; };
+                : switch (p.getPlaceType()) {
+            case RESTAURANT -> "식당";
+            case CAFE -> "카페";
+            case ATTRACTION -> "관광지";
+            case SPA -> "스파";
+            default -> "기타";
+        };
         String kakao = "KAKAO".equals(p.getSource()) && p.getExternalId() != null ? "http://place.map.kakao.com/" + p.getExternalId().replaceFirst("^KAKAO_", "") : null;
         return new FavoriteItem(f.getId(), p.getId(), p.getPlaceType().name(), typeLabel(p.getPlaceType()), p.getName(), p.getSido(), p.getSigungu(), p.getAddress(), p.getLat(), p.getLng(), thumbnail, sub, p.isRegisteredOnsen(), p.getSource(), kakao, f.getCreatedAt());
     }
-    private String typeLabel(PlaceType type) { return switch (type) { case ONSEN -> "온천"; case SPA -> "스파"; case RESTAURANT -> "식당"; case CAFE -> "카페"; case ATTRACTION -> "관광지"; default -> "기타"; }; }
+
+    private String typeLabel(PlaceType type) {
+        return switch (type) {
+            case ONSEN -> "온천";
+            case SPA -> "스파";
+            case RESTAURANT -> "식당";
+            case CAFE -> "카페";
+            case ATTRACTION -> "관광지";
+            default -> "기타";
+        };
+    }
+
     private FavoriteCounts counts(List<Favorite> all) {
         Map<PlaceType, Long> map = all.stream().map(f -> findPlace(f.getPlaceId()).getPlaceType()).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         return new FavoriteCounts(all.size(), map.getOrDefault(PlaceType.ONSEN, 0L) + map.getOrDefault(PlaceType.SPA, 0L), map.getOrDefault(PlaceType.RESTAURANT, 0L), map.getOrDefault(PlaceType.CAFE, 0L), map.getOrDefault(PlaceType.ATTRACTION, 0L));
     }
-    public record CreateOutcome(FavoriteCreateResponse response, boolean existing) {}
+
+    public record CreateOutcome(FavoriteCreateResponse response, boolean existing) {
+    }
 }

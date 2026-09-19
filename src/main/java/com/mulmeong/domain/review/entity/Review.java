@@ -1,21 +1,18 @@
 package com.mulmeong.domain.review.entity;
 
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-
+import com.mulmeong.domain.user.entity.User;
 import com.mulmeong.global.common.BaseTimeEntity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Formula;
 
-/** reviews 테이블. 작성·수정·삭제(601~606)는 이 범위 밖 — 701~709 마이페이지 조회 전용 읽기 매핑. */
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Entity
 @Table(name = "reviews")
@@ -52,6 +49,54 @@ public class Review extends BaseTimeEntity {
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    @Formula("""
+            exists (
+                select 1 from reviews prev
+                where prev.user_id = user_id
+                  and prev.place_id = place_id
+                  and prev.deleted_at is null
+                  and prev.visited_at < visited_at
+            )
+            """)
+    private boolean revisit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+
+    @OneToMany(mappedBy = "review", fetch = FetchType.LAZY)
+    @OrderBy("sortOrder asc")
+    private List<ReviewImage> images = new ArrayList<>();
+
+    public static Review create(Long userId, Long placeId, short rating, short cleanliness, short crowdedness,
+                                short facilityScore, String visitTimeSlot, LocalDate visitedAt, String body) {
+        Review review = new Review();
+        review.userId = userId;
+        review.placeId = placeId;
+        review.rating = rating;
+        review.cleanliness = cleanliness;
+        review.crowdedness = crowdedness;
+        review.facilityScore = facilityScore;
+        review.visitTimeSlot = visitTimeSlot;
+        review.visitedAt = visitedAt;
+        review.body = body;
+        return review;
+    }
+
+    public void update(Short rating, Short cleanliness, Short crowdedness, Short facilityScore, String visitTimeSlot,
+                       String body) {
+        if (rating != null) this.rating = rating;
+        if (cleanliness != null) this.cleanliness = cleanliness;
+        if (crowdedness != null) this.crowdedness = crowdedness;
+        if (facilityScore != null) this.facilityScore = facilityScore;
+        if (visitTimeSlot != null) this.visitTimeSlot = visitTimeSlot;
+        if (body != null) this.body = body;
+    }
+
+    public void delete(OffsetDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 
     public boolean isDeleted() {
         return deletedAt != null;

@@ -1,20 +1,20 @@
 package com.mulmeong.domain.place.service;
 
-import java.util.List;
-
+import com.mulmeong.domain.place.entity.Place;
+import com.mulmeong.domain.place.entity.PlaceType;
+import com.mulmeong.domain.place.repository.PlaceRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.mulmeong.domain.place.entity.Place;
-import com.mulmeong.domain.place.entity.PlaceType;
-import com.mulmeong.domain.place.repository.PlaceRepository;
+import java.util.List;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-/** 지도 요청과 분리해 TourAPI 온천 후보를 주기적으로 DB에 반영한다. */
+/**
+ * 지도 요청과 분리해 TourAPI 온천 후보를 주기적으로 DB에 반영한다.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

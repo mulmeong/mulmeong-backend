@@ -1,10 +1,12 @@
 package com.mulmeong.global.exception;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-/** Common error body: {@code { "code": "...", "message": "...", "fieldErrors": [...] } }. */
+import java.util.List;
+
+/**
+ * Common error body: {@code { "code": "...", "message": "...", "fieldErrors": [...] } }.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ErrorResponse(String code, String message, List<FieldErrorDetail> fieldErrors) {
 

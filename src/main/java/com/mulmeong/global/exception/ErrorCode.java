@@ -1,9 +1,8 @@
 package com.mulmeong.global.exception;
 
-import org.springframework.http.HttpStatus;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 /**
  * {@code name()} is the wire "code" sent to clients — keep names stable, they're part of the API contract.
@@ -35,6 +34,8 @@ public enum ErrorCode {
     MIXED_UPDATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "닉네임과 비밀번호는 한 번에 변경할 수 없습니다"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 리뷰입니다"),
+    DAILY_REVIEW_LIMIT(HttpStatus.CONFLICT, "같은 온천에는 하루에 리뷰를 한 번만 작성할 수 있습니다"),
+    TOO_MANY_IMAGES(HttpStatus.BAD_REQUEST, "리뷰 사진은 최대 5장까지 등록할 수 있습니다"),
     INVALID_REGION_CODE(HttpStatus.BAD_REQUEST, "존재하지 않는 지역 코드입니다"),
 
     // Map / Place

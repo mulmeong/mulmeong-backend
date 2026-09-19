@@ -5,13 +5,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-/** JWT로 직접 인증을 처리하므로 Spring Security의 기본 in-memory UserDetailsService는 끈다. */
+/**
+ * JWT로 직접 인증을 처리하므로 Spring Security의 기본 in-memory UserDetailsService는 끈다.
+ */
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 @EnableScheduling
 public class MulmeongBackendApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(MulmeongBackendApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(MulmeongBackendApplication.class, args);
+    }
 
 }

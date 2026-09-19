@@ -2,7 +2,9 @@ package com.mulmeong.global.util;
 
 import java.security.SecureRandom;
 
-/** Base62 random tokens for share links (shareToken, profileShareToken, ...) — no PK exposed. */
+/**
+ * Base62 random tokens for share links (shareToken, profileShareToken, ...) — no PK exposed.
+ */
 public final class RandomTokenGenerator {
 
     private static final String ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

@@ -1,27 +1,22 @@
 package com.mulmeong.domain.review.service;
 
-import java.util.List;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.mulmeong.domain.review.dto.response.MyReviewDetailResponse;
-import com.mulmeong.domain.review.dto.response.MyReviewItem;
-import com.mulmeong.domain.review.dto.response.MyReviewListResponse;
-import com.mulmeong.domain.review.dto.response.MyReviewOnsenSummary;
-import com.mulmeong.domain.review.dto.response.MyReviewRegionFilter;
-import com.mulmeong.domain.review.dto.response.RecentOnsenSummary;
+import com.mulmeong.domain.review.dto.response.*;
 import com.mulmeong.domain.review.repository.MyReviewDetailRow;
 import com.mulmeong.domain.review.repository.MyReviewRepository;
 import com.mulmeong.domain.review.repository.MyReviewRow;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/** 701(리뷰 수), 704(내 리뷰 목록), 705(내 리뷰 상세). 601~606 리뷰 작성/수정/삭제는 범위 밖. */
+import java.util.List;
+
+/**
+ * 701(리뷰 수), 704(내 리뷰 목록), 705(내 리뷰 상세). 601~606 리뷰 작성/수정/삭제는 범위 밖.
+ */
 @Service
 @RequiredArgsConstructor
 public class MyReviewService {
@@ -46,7 +41,9 @@ public class MyReviewService {
         return myReviewRepository.findDistinctPlaceIdsByUserAndSigungu(userId, sigunguCode);
     }
 
-    /** 708 recentOnsens: visited_at 최근순 최대 3곳(같은 온천 중복 제외). */
+    /**
+     * 708 recentOnsens: visited_at 최근순 최대 3곳(같은 온천 중복 제외).
+     */
     @Transactional(readOnly = true)
     public List<RecentOnsenSummary> recentOnsens(Long userId, int limit) {
         return myReviewRepository.findRecentOnsenCandidates(userId).stream()

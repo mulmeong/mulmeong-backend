@@ -1,15 +1,5 @@
 package com.mulmeong.domain.dart.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
-
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mulmeong.domain.dart.dto.DartRequest;
 import com.mulmeong.domain.dart.dto.DartResponse;
@@ -20,20 +10,38 @@ import com.mulmeong.domain.place.entity.AccessLevel;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
 public class DartService {
     private static final int[] LIMIT_STEPS = {90, 120, 180, 240};
-    @Value("${app.dart.road-factor:1.3}") private double roadFactor;
-    @Value("${app.dart.car-kmh:70}") private double carKmh;
-    @Value("${app.dart.transit-kmh:60}") private double transitKmh;
-    @Value("${app.dart.transit-transfer-min:25}") private int transitTransferMin;
-    @Value("${app.dart.min-pool:8}") private int minPool;
-    @Value("${app.dart.weight-village:6}") private double villageWeight;
-    @Value("${app.dart.weight-walkable:3}") private double walkableWeight;
-    @Value("${app.dart.weight-lodging:2}") private double lodgingWeight;
-    @Value("${app.dart.recent-penalty-divisor:4}") private double recentPenaltyDivisor;
+    @Value("${app.dart.road-factor:1.3}")
+    private double roadFactor;
+    @Value("${app.dart.car-kmh:70}")
+    private double carKmh;
+    @Value("${app.dart.transit-kmh:60}")
+    private double transitKmh;
+    @Value("${app.dart.transit-transfer-min:25}")
+    private int transitTransferMin;
+    @Value("${app.dart.min-pool:8}")
+    private int minPool;
+    @Value("${app.dart.weight-village:6}")
+    private double villageWeight;
+    @Value("${app.dart.weight-walkable:3}")
+    private double walkableWeight;
+    @Value("${app.dart.weight-lodging:2}")
+    private double lodgingWeight;
+    @Value("${app.dart.recent-penalty-divisor:4}")
+    private double recentPenaltyDivisor;
 
     private final DartCandidateRepository candidateRepository;
     private final JdbcTemplate jdbcTemplate;
@@ -93,7 +101,9 @@ public class DartService {
                 toResult(request, result, minutes));
     }
 
-    /** 709 탈퇴: 다트 기록은 남기되 회원 연결만 끊는다. */
+    /**
+     * 709 탈퇴: 다트 기록은 남기되 회원 연결만 끊는다.
+     */
     @Transactional
     public void anonymizeUserId(Long userId) {
         jdbcTemplate.update("UPDATE dart_logs SET user_id = NULL WHERE user_id = ?", userId);
@@ -126,7 +136,8 @@ public class DartService {
             if ("WALKABLE".equals(c.getAccessLevel())) weight += walkableWeight;
             if ("CAR_RECOMMENDED".equals(c.getAccessLevel())) weight += 1;
         }
-        if (r.stayType() == DartRequest.StayType.OVERNIGHT && Boolean.TRUE.equals(c.getHasLodging())) weight += lodgingWeight;
+        if (r.stayType() == DartRequest.StayType.OVERNIGHT && Boolean.TRUE.equals(c.getHasLodging()))
+            weight += lodgingWeight;
         if (recent.contains(c.getId())) weight /= recentPenaltyDivisor;
         return weight;
     }
@@ -135,7 +146,9 @@ public class DartService {
         double roadKm = haversine(origin.lat(), origin.lng(), c.getLat(), c.getLng()) * roadFactor;
         if (transport == DartRequest.Transport.CAR) return (int) (roadKm / carKmh * 60) + 10;
         int access = c.getTransitMinutes() != null ? c.getTransitMinutes() : switch (c.getAccessLevel()) {
-            case "WALKABLE" -> 20; case "CAR_RECOMMENDED" -> 45; default -> 75;
+            case "WALKABLE" -> 20;
+            case "CAR_RECOMMENDED" -> 45;
+            default -> 75;
         };
         return (int) (roadKm / transitKmh * 60) + transitTransferMin + access;
     }
@@ -149,7 +162,7 @@ public class DartService {
     }
 
     private Long saveLog(DartRequest request, DartCandidate result, int count, boolean relaxed, boolean reroll,
-            Long userId, Integer relaxedFrom) {
+                         Long userId, Integer relaxedFrom) {
         final String conditions;
         try {
             conditions = objectMapper.writeValueAsString(request);
@@ -157,10 +170,10 @@ public class DartService {
             throw new IllegalStateException("다트 조건 직렬화에 실패했습니다", e);
         }
         return jdbcTemplate.queryForObject("""
-                INSERT INTO dart_logs (user_id, conditions, candidate_id, candidate_count, relaxed, relaxed_from, is_reroll,
-                    result_place_id, throw_count, start_location, start_lat, start_lng)
-                VALUES (?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, 1, ?, ?, ?) RETURNING id
-                """, Long.class, userId, conditions, result.getId(), count, relaxed, relaxedFrom, reroll,
+                        INSERT INTO dart_logs (user_id, conditions, candidate_id, candidate_count, relaxed, relaxed_from, is_reroll,
+                            result_place_id, throw_count, start_location, start_lat, start_lng)
+                        VALUES (?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, 1, ?, ?, ?) RETURNING id
+                        """, Long.class, userId, conditions, result.getId(), count, relaxed, relaxedFrom, reroll,
                 result.getPlace() == null ? null : result.getPlace().getId(), request.origin().label(),
                 request.origin().lat(), request.origin().lng());
     }
@@ -174,15 +187,22 @@ public class DartService {
         if (!Double.isFinite(o.lat()) || !Double.isFinite(o.lng()) || o.lat() < 33 || o.lat() > 39 || o.lng() < 124 || o.lng() > 132)
             throw new BusinessException(ErrorCode.INVALID_ORIGIN);
     }
+
     private void validateMinutes(Integer minutes) {
         if (minutes != null && indexOfLimit(minutes) < 0) throw new BusinessException(ErrorCode.VALIDATION_FAILED);
     }
-    private int indexOfLimit(int value) { for (int i = 0; i < LIMIT_STEPS.length; i++) if (LIMIT_STEPS[i] == value) return i; return -1; }
+
+    private int indexOfLimit(int value) {
+        for (int i = 0; i < LIMIT_STEPS.length; i++) if (LIMIT_STEPS[i] == value) return i;
+        return -1;
+    }
+
     private String relaxMessage(Integer requested, int initialCount, int used) {
         if (used == Integer.MAX_VALUE) return "조건에 맞는 곳이 적어서 전국에서 골랐어요";
         if (requested != null && used == 120) return "90분 안에는 후보가 적어서 2시간까지 넓혔어요";
         return requested + "분 안에는 " + initialCount + "곳뿐이라 " + (used / 60) + "시간까지 넓혔어요";
     }
+
     private static double haversine(double lat1, double lng1, double lat2, double lng2) {
         double dLat = Math.toRadians(lat2 - lat1), dLng = Math.toRadians(lng2 - lng1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);

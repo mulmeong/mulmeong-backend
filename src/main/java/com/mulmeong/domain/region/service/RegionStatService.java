@@ -1,13 +1,5 @@
 package com.mulmeong.domain.region.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.mulmeong.domain.region.dto.response.GrapeMapResponse;
 import com.mulmeong.domain.region.entity.RegionStat;
 import com.mulmeong.domain.region.entity.Sido;
@@ -15,8 +7,14 @@ import com.mulmeong.domain.region.repository.RegionStatRepository;
 import com.mulmeong.domain.review.service.MyReviewService;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 702(포도알 지도), 708 공개 프로필의 지역 요약, 701/708의 grapeRegionCount.
@@ -43,7 +41,9 @@ public class RegionStatService {
                 : sidoMap(userId);
     }
 
-    /** 708 공개 프로필용. 방문한 시·도만, onsenIds 없이 별도 요약으로 내려준다. */
+    /**
+     * 708 공개 프로필용. 방문한 시·도만, onsenIds 없이 별도 요약으로 내려준다.
+     */
     @Transactional(readOnly = true)
     public List<VisitedRegionSummary> visitedSidoSummaries(Long userId) {
         Map<String, Integer> visitCounts = sumBySido(userId);
@@ -110,10 +110,35 @@ public class RegionStatService {
         return sums;
     }
 
-    /** 709 탈퇴. */
+    /**
+     * 709 탈퇴.
+     */
     @Transactional
     public void deleteAllByUserId(Long userId) {
         regionStatRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public void incrementVisitCount(Long userId, String sidoCode, String sigunguCode) {
+        if (hasRegionCodes(sidoCode, sigunguCode))
+            regionStatRepository.incrementVisitCount(userId, sidoCode, sigunguCode);
+    }
+
+    @Transactional
+    public void decrementVisitCount(Long userId, String sigunguCode) {
+        if (sigunguCode != null && !sigunguCode.isBlank())
+            regionStatRepository.decrementVisitCount(userId, sigunguCode);
+    }
+
+    @Transactional(readOnly = true)
+    public int visitCount(Long userId, String sigunguCode) {
+        if (sigunguCode == null || sigunguCode.isBlank()) return 0;
+        return regionStatRepository.findByUserIdAndSigunguCode(userId, sigunguCode)
+                .map(RegionStat::getVisitCount).orElse(0);
+    }
+
+    private boolean hasRegionCodes(String sidoCode, String sigunguCode) {
+        return sidoCode != null && !sidoCode.isBlank() && sigunguCode != null && !sigunguCode.isBlank();
     }
 
     public record VisitedRegionSummary(String regionCode, String name, int visitCount, double density) {

@@ -1,17 +1,12 @@
 package com.mulmeong.domain.place.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** stations 테이블 (거점역 = 기차역/터미널). */
+/**
+ * stations 테이블 (거점역 = 기차역/터미널).
+ */
 @Getter
 @Entity
 @Table(name = "stations")

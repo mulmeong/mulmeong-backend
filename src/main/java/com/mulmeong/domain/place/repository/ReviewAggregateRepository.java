@@ -1,14 +1,15 @@
 package com.mulmeong.domain.place.repository;
 
-import java.util.List;
-
+import com.mulmeong.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.mulmeong.domain.user.entity.User;
+import java.util.List;
 
-/** Reviews are not modelled as a JPA aggregate yet; keep list/detail statistics as a read projection. */
+/**
+ * Reviews are not modelled as a JPA aggregate yet; keep list/detail statistics as a read projection.
+ */
 public interface ReviewAggregateRepository extends JpaRepository<User, Long> {
 
     @Query(value = """

@@ -1,32 +1,33 @@
 package com.mulmeong.domain.user.service;
 
 //import java.security.SecureRandom;
-import java.time.Duration;
-import java.time.OffsetDateTime;
-import java.util.Optional;
-
-import com.mulmeong.domain.user.dto.response.NicknameCheckResponse;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.mulmeong.domain.user.dto.request.SignupRequest;
 import com.mulmeong.domain.user.dto.response.EmailCheckResponse;
+import com.mulmeong.domain.user.dto.response.NicknameCheckResponse;
 import com.mulmeong.domain.user.dto.response.SignupResponse;
 import com.mulmeong.domain.user.entity.User;
 import com.mulmeong.domain.user.repository.UserRepository;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 import com.mulmeong.global.util.RandomTokenGenerator;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
-    /** MY-07: 닉네임은 마지막 변경 후 30일이 지나야 다시 바꿀 수 있다. */
+    /**
+     * MY-07: 닉네임은 마지막 변경 후 30일이 지나야 다시 바꿀 수 있다.
+     */
     private static final Duration NICKNAME_CHANGE_COOLDOWN = Duration.ofDays(30);
 
 //    private static final String NICKNAME_PREFIX = "물멍러";
@@ -71,14 +72,18 @@ public class UserService {
         }
     }
 
-    /** 이메일 사용 가능 여부 (API 103). 중복이어도 409가 아니라 200 + available=false. */
+    /**
+     * 이메일 사용 가능 여부 (API 103). 중복이어도 409가 아니라 200 + available=false.
+     */
     @Transactional(readOnly = true)
     public EmailCheckResponse checkEmail(String email) {
         String normalized = email.trim().toLowerCase();
         return new EmailCheckResponse(normalized, !userRepository.existsByEmail(normalized));
     }
 
-    /** 닉네임 사용 가능 여부. */
+    /**
+     * 닉네임 사용 가능 여부.
+     */
     @Transactional(readOnly = true)
     public NicknameCheckResponse checkNickname(String nickname) {
         return new NicknameCheckResponse(
@@ -87,7 +92,9 @@ public class UserService {
         );
     }
 
-    /** domain.auth가 로그인/재발급에서 쓰는 조회. 다른 도메인은 UserRepository를 직접 주입하지 않고 이걸 통해 접근한다. */
+    /**
+     * domain.auth가 로그인/재발급에서 쓰는 조회. 다른 도메인은 UserRepository를 직접 주입하지 않고 이걸 통해 접근한다.
+     */
     @Transactional(readOnly = true)
     public Optional<User> getByEmail(String email) {
         return userRepository.findByEmail(email);
@@ -103,14 +110,39 @@ public class UserService {
         return userRepository.findByProfileShareToken(token);
     }
 
-    /** 30일 이내 변경했으면 다음 변경 가능 시각, 아니면 null (지금 바로 가능). */
+    /**
+     * 방문 인증 흐름 직렬화 및 레벨 전후 계산용. 카운트 변경은 아래 UPDATE 쿼리로만 한다.
+     */
+    @Transactional
+    public User lockActiveUser(Long userId) {
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.isWithdrawn()) throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        return user;
+    }
+
+    @Transactional
+    public void incrementVisitCount(Long userId) {
+        userRepository.incrementVisitCount(userId);
+    }
+
+    @Transactional
+    public void decrementVisitCount(Long userId) {
+        userRepository.decrementVisitCount(userId);
+    }
+
+    /**
+     * 30일 이내 변경했으면 다음 변경 가능 시각, 아니면 null (지금 바로 가능).
+     */
     public OffsetDateTime nicknameEditableAt(User user) {
         if (user.getNicknameChangedAt() == null) return null;
         OffsetDateTime editableAt = user.getNicknameChangedAt().plus(NICKNAME_CHANGE_COOLDOWN);
         return editableAt.isAfter(OffsetDateTime.now()) ? editableAt : null;
     }
 
-    /** 706-①: 닉네임 변경. */
+    /**
+     * 706-①: 닉네임 변경.
+     */
     @Transactional
     public User changeNickname(Long userId, String nickname) {
         User user = requireActiveUser(userId);
@@ -125,7 +157,9 @@ public class UserService {
         return user;
     }
 
-    /** 706-②: 비밀번호 변경. */
+    /**
+     * 706-②: 비밀번호 변경.
+     */
     @Transactional
     public void changePassword(Long userId, String currentPassword, String newPassword, String newPasswordConfirm) {
         User user = requireActiveUser(userId);
@@ -138,7 +172,9 @@ public class UserService {
         user.changePassword(passwordEncoder.encode(newPassword));
     }
 
-    /** 709: 탈퇴. users 테이블 자체의 소프트 삭제만 담당 — 찜/팜플렛/포도알 등 다른 도메인 정리는 호출자(orchestrator)의 몫. */
+    /**
+     * 709: 탈퇴. users 테이블 자체의 소프트 삭제만 담당 — 찜/팜플렛/포도알 등 다른 도메인 정리는 호출자(orchestrator)의 몫.
+     */
     @Transactional
     public void withdraw(Long userId, String password) {
         User user = requireActiveUser(userId);
