@@ -32,7 +32,26 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     @Query(value = """
             SELECT * FROM places p
             WHERE p.place_type = 'ONSEN'
-              AND (:region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+              AND (:region = '' OR CASE COALESCE(p.sido, '')
+                        WHEN '서울특별시' THEN '서울'
+                        WHEN '경기도' THEN '경기'
+                        WHEN '인천광역시' THEN '인천'
+                        WHEN '강원특별자치도' THEN '강원'
+                        WHEN '대전광역시' THEN '충청'
+                        WHEN '세종특별자치시' THEN '충청'
+                        WHEN '충청북도' THEN '충청'
+                        WHEN '충청남도' THEN '충청'
+                        WHEN '부산광역시' THEN '경상'
+                        WHEN '대구광역시' THEN '경상'
+                        WHEN '울산광역시' THEN '경상'
+                        WHEN '경상북도' THEN '경상'
+                        WHEN '경상남도' THEN '경상'
+                        WHEN '광주광역시' THEN '전라'
+                        WHEN '전라남도' THEN '전라'
+                        WHEN '전북특별자치도' THEN '전라'
+                        WHEN '제주특별자치도' THEN '제주'
+                        ELSE COALESCE(p.sido, '') END = :region
+                   OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
                    OR LOWER(COALESCE(p.sigungu, '')) LIKE LOWER(CONCAT('%', :region, '%'))
                    OR LOWER(COALESCE(p.sido_code, '')) = LOWER(:region)
                    OR LOWER(COALESCE(p.sigungu_code, '')) = LOWER(:region))
@@ -45,7 +64,26 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     @Query(value = """
             SELECT COUNT(*) FROM places p
             WHERE p.place_type = 'ONSEN'
-              AND (:region = '' OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
+              AND (:region = '' OR CASE COALESCE(p.sido, '')
+                        WHEN '서울특별시' THEN '서울'
+                        WHEN '경기도' THEN '경기'
+                        WHEN '인천광역시' THEN '인천'
+                        WHEN '강원특별자치도' THEN '강원'
+                        WHEN '대전광역시' THEN '충청'
+                        WHEN '세종특별자치시' THEN '충청'
+                        WHEN '충청북도' THEN '충청'
+                        WHEN '충청남도' THEN '충청'
+                        WHEN '부산광역시' THEN '경상'
+                        WHEN '대구광역시' THEN '경상'
+                        WHEN '울산광역시' THEN '경상'
+                        WHEN '경상북도' THEN '경상'
+                        WHEN '경상남도' THEN '경상'
+                        WHEN '광주광역시' THEN '전라'
+                        WHEN '전라남도' THEN '전라'
+                        WHEN '전북특별자치도' THEN '전라'
+                        WHEN '제주특별자치도' THEN '제주'
+                        ELSE COALESCE(p.sido, '') END = :region
+                   OR LOWER(COALESCE(p.sido, '')) LIKE LOWER(CONCAT('%', :region, '%'))
                    OR LOWER(COALESCE(p.sigungu, '')) LIKE LOWER(CONCAT('%', :region, '%'))
                    OR LOWER(COALESCE(p.sido_code, '')) = LOWER(:region)
                    OR LOWER(COALESCE(p.sigungu_code, '')) = LOWER(:region))
