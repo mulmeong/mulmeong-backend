@@ -7,6 +7,7 @@ import com.mulmeong.domain.place.dto.response.ExternalCategoryPlaceResponse;
 import com.mulmeong.domain.place.dto.response.ExternalKeywordSearchResponse;
 import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
 import com.mulmeong.domain.place.dto.response.TourNearbyResponse;
+import com.mulmeong.domain.place.dto.response.TourPlaceDetailResponse;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
