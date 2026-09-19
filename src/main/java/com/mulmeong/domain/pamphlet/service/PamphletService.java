@@ -1,22 +1,32 @@
 package com.mulmeong.domain.pamphlet.service;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.mulmeong.domain.pamphlet.dto.request.PamphletCreateRequest;
 import com.mulmeong.domain.pamphlet.dto.response.*;
-import com.mulmeong.domain.pamphlet.entity.*;
-import com.mulmeong.domain.pamphlet.repository.*;
-import com.mulmeong.domain.place.entity.*;
-import com.mulmeong.domain.place.repository.*;
+import com.mulmeong.domain.pamphlet.entity.Pamphlet;
+import com.mulmeong.domain.pamphlet.entity.PamphletPlace;
+import com.mulmeong.domain.pamphlet.repository.PamphletPlaceRepository;
+import com.mulmeong.domain.pamphlet.repository.PamphletRepository;
+import com.mulmeong.domain.place.entity.Place;
+import com.mulmeong.domain.place.entity.PlaceType;
+import com.mulmeong.domain.place.repository.PlaceImageRepository;
+import com.mulmeong.domain.place.repository.PlaceRepository;
 import com.mulmeong.domain.user.entity.User;
 import com.mulmeong.domain.user.service.UserService;
-import com.mulmeong.global.exception.*;
+import com.mulmeong.global.exception.BusinessException;
+import com.mulmeong.global.exception.ErrorCode;
 import com.mulmeong.global.util.RandomTokenGenerator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-@Service @RequiredArgsConstructor
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
 public class PamphletService {
     private static final String SHARE_BASE = "https://mulmeong.app/pamphlet/";
     private final PamphletRepository pamphlets;
@@ -39,10 +49,13 @@ public class PamphletService {
             cover = image(coverPlace.getId());
         }
         String token;
-        do { token = RandomTokenGenerator.generate(8); } while (pamphlets.existsByShareToken(token));
+        do {
+            token = RandomTokenGenerator.generate(8);
+        } while (pamphlets.existsByShareToken(token));
         Short partySize = request.partySize() == null ? null : request.partySize().shortValue();
         Pamphlet pamphlet = pamphlets.save(new Pamphlet(userId, request.title().trim(), partySize, request.travelDate(), cover, token));
-        for (int i = 0; i < selected.size(); i++) pamphletPlaces.save(new PamphletPlace(pamphlet.getId(), selected.get(i).getId(), (short) i));
+        for (int i = 0; i < selected.size(); i++)
+            pamphletPlaces.save(new PamphletPlace(pamphlet.getId(), selected.get(i).getId(), (short) i));
         return new PamphletCreateResponse(pamphlet.getId(), token, SHARE_BASE + token, pamphlet.getTitle(), toInteger(pamphlet.getPartySize()), pamphlet.getTravelDate(), selected.size(), cover, pamphlet.getCreatedAt());
     }
 
@@ -72,17 +85,24 @@ public class PamphletService {
     }
 
     @Transactional(readOnly = true)
-    public long countByUserId(Long userId) { return pamphlets.findByUserIdOrderByCreatedAtDesc(userId).size(); }
+    public long countByUserId(Long userId) {
+        return pamphlets.findByUserIdOrderByCreatedAtDesc(userId).size();
+    }
 
-    /** 709 탈퇴. pamphlet_places는 DB의 ON DELETE CASCADE로 함께 삭제된다. */
+    /**
+     * 709 탈퇴. pamphlet_places는 DB의 ON DELETE CASCADE로 함께 삭제된다.
+     */
     @Transactional
-    public void deleteAllByUserId(Long userId) { pamphlets.deleteByUserId(userId); }
+    public void deleteAllByUserId(Long userId) {
+        pamphlets.deleteByUserId(userId);
+    }
 
     private PamphletListItem listItem(Pamphlet p) {
         List<Place> selected = orderedPlaces(p.getId());
         String region = regionName(selected);
         return new PamphletListItem(p.getId(), p.getShareToken(), p.getTitle(), toInteger(p.getPartySize()), p.getTravelDate(), p.getCoverImageUrl(), selected.size(), region, SHARE_BASE + p.getShareToken(), p.getCreatedAt());
     }
+
     private PamphletDetail detail(Pamphlet p, List<Place> selected, User author, boolean mine) {
         int onsens = (int) selected.stream().filter(x -> x.getPlaceType() == PlaceType.ONSEN).count();
         return new PamphletDetail(mine ? p.getId() : null, p.getShareToken(), p.getTitle(), toInteger(p.getPartySize()), p.getTravelDate(),
@@ -90,20 +110,37 @@ public class PamphletService {
                 java.util.stream.IntStream.range(0, selected.size()).mapToObj(i -> placeItem(selected.get(i), i + 1)).toList(),
                 new PamphletSummary(onsens, selected.size(), regionName(selected)), p.getCreatedAt());
     }
+
     private static Integer toInteger(Short value) {
         return value == null ? null : value.intValue();
     }
+
     private List<Place> orderedPlaces(Long id) {
         return pamphletPlaces.findByPamphletIdOrderBySortOrder(id).stream().map(x -> places.findById(x.getPlaceId()).orElse(null)).filter(Objects::nonNull).toList();
     }
+
     private PamphletPlaceItem placeItem(Place p, int seq) {
         String type = p.getPlaceType().name();
         String sub = p.getPlaceType() == PlaceType.ONSEN ? (p.getWaterTemp() == null ? "" : p.getWaterTemp() + "℃") + (p.getWaterType() == null ? "" : " · " + p.getWaterType()) + (Boolean.TRUE.equals(p.getHasOutdoor()) ? " · 노천 있음" : "") : typeLabel(p.getPlaceType());
         String kakao = "KAKAO".equals(p.getSource()) && p.getExternalId() != null ? "http://place.map.kakao.com/" + p.getExternalId().replaceFirst("^KAKAO_", "") : null;
         return new PamphletPlaceItem(seq, p.getId(), type, typeLabel(p.getPlaceType()), p.getName(), sub, p.getAddress(), image(p.getId()), p.getLat(), p.getLng(), kakao);
     }
-    private String image(Long id) { return images.findByPlaceIdOrderBySortOrder(id).stream().findFirst().map(x -> x.getImageUrl()).orElse(null); }
-    private String typeLabel(PlaceType t) { return switch (t) { case ONSEN -> "온천"; case SPA -> "스파"; case RESTAURANT -> "식당"; case CAFE -> "카페"; case ATTRACTION -> "관광지"; default -> "기타"; }; }
+
+    private String image(Long id) {
+        return images.findByPlaceIdOrderBySortOrder(id).stream().findFirst().map(x -> x.getImageUrl()).orElse(null);
+    }
+
+    private String typeLabel(PlaceType t) {
+        return switch (t) {
+            case ONSEN -> "온천";
+            case SPA -> "스파";
+            case RESTAURANT -> "식당";
+            case CAFE -> "카페";
+            case ATTRACTION -> "관광지";
+            default -> "기타";
+        };
+    }
+
     private String regionName(List<Place> ps) {
         return ps.stream().map(Place::getSido).filter(Objects::nonNull).collect(Collectors.groupingBy(x -> x, Collectors.counting())).entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
     }

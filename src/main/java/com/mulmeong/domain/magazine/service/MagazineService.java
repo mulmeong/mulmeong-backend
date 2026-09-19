@@ -1,16 +1,5 @@
 package com.mulmeong.domain.magazine.service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.mulmeong.domain.magazine.dto.MagazineListResponse;
 import com.mulmeong.domain.magazine.dto.MagazineResponse;
 import com.mulmeong.domain.magazine.entity.Magazine;
@@ -23,8 +12,17 @@ import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.domain.place.repository.PlaceImageRepository;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +34,7 @@ public class MagazineService {
 
     @Transactional(readOnly = true)
     public MagazineListResponse list(String category, String sidoCode, String sort, boolean featured, int page, int size,
-            Long userId) {
+                                     Long userId) {
         MagazineCategory c = parseCategory(category);
         int actualSize = featured ? 5 : Math.min(Math.max(size, 1), 100);
         String property = "POPULAR".equals(sort) ? "likeCount"
@@ -85,6 +83,7 @@ public class MagazineService {
             magazineRepository.incrementLikeCount(id);
         }
     }
+
     @Transactional
     public void unlike(Long id, Long userId) {
         requireMagazine(id);
@@ -94,7 +93,9 @@ public class MagazineService {
         });
     }
 
-    /** 709 탈퇴 시 내 좋아요를 전부 취소한다(like_count 감소 포함). */
+    /**
+     * 709 탈퇴 시 내 좋아요를 전부 취소한다(like_count 감소 포함).
+     */
     @Transactional
     public void unlikeAllByUser(Long userId) {
         likeRepository.findByUserId(userId).forEach(like -> unlike(like.getMagazineId(), userId));
@@ -143,11 +144,11 @@ public class MagazineService {
             return "전국";
         }
         return Map.ofEntries(
-                Map.entry("11", "서울"), Map.entry("26", "부산"), Map.entry("27", "대구"),
-                Map.entry("28", "인천"), Map.entry("29", "광주"), Map.entry("30", "대전"),
-                Map.entry("31", "울산"), Map.entry("43", "충북"), Map.entry("44", "충남"),
-                Map.entry("46", "전남"), Map.entry("47", "경북"), Map.entry("48", "경남"),
-                Map.entry("51", "강원"), Map.entry("52", "전북"), Map.entry("41", "경기"))
+                        Map.entry("11", "서울"), Map.entry("26", "부산"), Map.entry("27", "대구"),
+                        Map.entry("28", "인천"), Map.entry("29", "광주"), Map.entry("30", "대전"),
+                        Map.entry("31", "울산"), Map.entry("43", "충북"), Map.entry("44", "충남"),
+                        Map.entry("46", "전남"), Map.entry("47", "경북"), Map.entry("48", "경남"),
+                        Map.entry("51", "강원"), Map.entry("52", "전북"), Map.entry("41", "경기"))
                 .getOrDefault(code, code);
     }
 }

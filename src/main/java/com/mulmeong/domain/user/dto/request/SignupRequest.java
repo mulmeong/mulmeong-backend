@@ -1,15 +1,12 @@
 package com.mulmeong.domain.user.dto.request;
 
+import jakarta.validation.constraints.*;
+
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-
-/** 회원가입 요청 (AUTH-07 / API 101 POST /api/v1/auth/signup). 이메일 인증 없음. */
+/**
+ * 회원가입 요청 (AUTH-07 / API 101 POST /api/v1/auth/signup). 이메일 인증 없음.
+ */
 public record SignupRequest(
 
         @NotBlank(message = "이메일을 입력해주세요")

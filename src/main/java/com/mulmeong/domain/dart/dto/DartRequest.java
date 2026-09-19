@@ -1,10 +1,11 @@
 package com.mulmeong.domain.dart.dto;
 
-import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 public record DartRequest(
         @Valid @NotNull Origin origin,
@@ -15,7 +16,11 @@ public record DartRequest(
     public DartRequest {
         excludeIds = excludeIds == null ? List.of() : List.copyOf(excludeIds);
     }
-    public record Origin(@NotNull Double lat, @NotNull Double lng, @NotBlank String label) {}
-    public enum Transport { CAR, TRANSIT }
-    public enum StayType { DAY, OVERNIGHT }
+
+    public record Origin(@NotNull Double lat, @NotNull Double lng, @NotBlank String label) {
+    }
+
+    public enum Transport {CAR, TRANSIT}
+
+    public enum StayType {DAY, OVERNIGHT}
 }

@@ -1,10 +1,5 @@
 package com.mulmeong.domain.place.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +14,14 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/** PAM-01~06(201~206) 명세의 HTTP 계약을 PostgreSQL과 함께 검증한다. */
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * PAM-01~06(201~206) 명세의 HTTP 계약을 PostgreSQL과 함께 검증한다.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
@@ -42,8 +44,10 @@ class OnsenApiIntegrationTest {
         registry.add("external.tour-api.service-key", () -> "");
     }
 
-    @Autowired MockMvc mockMvc;
-    @Autowired JdbcTemplate jdbcTemplate;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    JdbcTemplate jdbcTemplate;
 
     private long onsenId;
 

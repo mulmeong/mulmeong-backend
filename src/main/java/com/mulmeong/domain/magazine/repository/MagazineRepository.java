@@ -1,10 +1,13 @@
 package com.mulmeong.domain.magazine.repository;
 
-import java.util.Optional;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.repository.*;
+import com.mulmeong.domain.magazine.entity.Magazine;
+import com.mulmeong.domain.magazine.entity.MagazineCategory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import com.mulmeong.domain.magazine.entity.*;
 
 public interface MagazineRepository extends JpaRepository<Magazine, Long> {
     @Modifying

@@ -1,6 +1,8 @@
 package com.mulmeong.global.common;
 
-/** users.visit_count 기준 레벨/칭호. DB에 저장하지 않고 항상 여기서 계산한다. */
+/**
+ * users.visit_count 기준 레벨/칭호. DB에 저장하지 않고 항상 여기서 계산한다.
+ */
 public enum Level {
 
     LV1(0, 2, "첫 탕"),
@@ -40,7 +42,9 @@ public enum Level {
         return min;
     }
 
-    /** 다음 레벨의 최소 방문 수. 최고 레벨이면 null. */
+    /**
+     * 다음 레벨의 최소 방문 수. 최고 레벨이면 null.
+     */
     public Integer nextLevelMin() {
         Level[] values = values();
         int next = ordinal() + 1;

@@ -2,7 +2,9 @@ package com.mulmeong.domain.place.dto.response;
 
 import java.util.List;
 
-/** 202 온천 정보 상세 응답. */
+/**
+ * 202 온천 정보 상세 응답.
+ */
 public record OnsenDetailResponse(
         Long onsenId,
         String name,

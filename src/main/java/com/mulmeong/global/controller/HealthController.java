@@ -1,11 +1,11 @@
 package com.mulmeong.global.controller;
 
-import java.time.Instant;
-import java.util.Map;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Instant;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")

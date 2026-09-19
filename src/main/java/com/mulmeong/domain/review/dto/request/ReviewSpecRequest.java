@@ -7,4 +7,5 @@ public record ReviewSpecRequest(
         String visitTime,
         @Min(1) @Max(5) Short clean,
         @Min(1) @Max(5) Short crowd,
-        @Min(1) @Max(5) Short facility) {}
+        @Min(1) @Max(5) Short facility) {
+}

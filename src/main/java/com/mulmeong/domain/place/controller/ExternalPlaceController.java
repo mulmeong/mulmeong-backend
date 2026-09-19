@@ -1,14 +1,5 @@
 package com.mulmeong.domain.place.controller;
 
-import java.time.Duration;
-import java.util.Locale;
-
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mulmeong.domain.place.dto.request.PoiCategory;
 import com.mulmeong.domain.place.dto.response.ExternalCategoryPlaceResponse;
@@ -17,9 +8,16 @@ import com.mulmeong.domain.place.service.ExternalDirectionsClient;
 import com.mulmeong.domain.place.service.ExternalPlaceClient;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
-
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Duration;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/v1/external")

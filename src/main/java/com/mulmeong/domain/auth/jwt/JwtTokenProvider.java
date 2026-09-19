@@ -1,17 +1,15 @@
 package com.mulmeong.domain.auth.jwt;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.UUID;
-
-import javax.crypto.SecretKey;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.UUID;
 
 /**
  * Access/Refresh 토큰 둘 다 JWT다. {@code type} 클레임으로 access와 refresh를 구분해서
@@ -65,7 +63,9 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    /** 서명·만료 검증. 유효하지 않으면 {@link io.jsonwebtoken.JwtException} (하위 타입 포함)을 던진다. */
+    /**
+     * 서명·만료 검증. 유효하지 않으면 {@link io.jsonwebtoken.JwtException} (하위 타입 포함)을 던진다.
+     */
     public Claims parse(String token) {
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
     }

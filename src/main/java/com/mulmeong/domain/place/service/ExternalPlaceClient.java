@@ -1,14 +1,5 @@
 package com.mulmeong.domain.place.service;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mulmeong.domain.place.dto.request.PoiCategory;
@@ -18,8 +9,18 @@ import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
 
-/** Kakao Local과 TourAPI의 외부 응답을 nearby 공통 응답으로 변환한다. */
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Kakao Local과 TourAPI의 외부 응답을 nearby 공통 응답으로 변환한다.
+ */
 @Component
 @Slf4j
 public class ExternalPlaceClient {
@@ -29,8 +30,10 @@ public class ExternalPlaceClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${external.kakao.rest-api-key:}") private String kakaoKey;
-    @Value("${external.tour-api.service-key:}") private String tourKey;
+    @Value("${external.kakao.rest-api-key:}")
+    private String kakaoKey;
+    @Value("${external.tour-api.service-key:}")
+    private String tourKey;
 
     public ExternalPlaceClient() {
         this.restClient = RestClient.builder().build();
@@ -48,7 +51,9 @@ public class ExternalPlaceClient {
         return result;
     }
 
-    /** TourAPI의 온천 검색 결과를 정기 동기화할 때 사용하는 최소 데이터만 반환한다. */
+    /**
+     * TourAPI의 온천 검색 결과를 정기 동기화할 때 사용하는 최소 데이터만 반환한다.
+     */
     public List<TourOnsenData> findOnsensForSync(int maxPages, int pageSize) {
         if (tourKey.isBlank()) return List.of();
         List<TourOnsenData> result = new ArrayList<>();
@@ -90,9 +95,12 @@ public class ExternalPlaceClient {
     }
 
     public record TourOnsenData(String externalId, String name, String address, Double lat, Double lng,
-            String phone, String homepageUrl) {}
+                                String phone, String homepageUrl) {
+    }
 
-    /** 904 카테고리 POI 토글. 프론트가 직접 호출하는 API라 nearby(204)와 달리 실패를 그대로 노출한다. */
+    /**
+     * 904 카테고리 POI 토글. 프론트가 직접 호출하는 API라 nearby(204)와 달리 실패를 그대로 노출한다.
+     */
     public ExternalCategoryPlaceResponse findByCategory(double lat, double lng, int radius, PoiCategory category, int size) {
         if (kakaoKey.isBlank()) {
             throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
@@ -123,28 +131,30 @@ public class ExternalPlaceClient {
 
     private String categorySearch(double lat, double lng, int radius, String groupCode, int size) {
         return restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
-                .path("/v2/local/search/category.json").queryParam("category_group_code", groupCode)
-                .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
-                .queryParam("sort", "distance").queryParam("size", size).build())
+                        .path("/v2/local/search/category.json").queryParam("category_group_code", groupCode)
+                        .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
+                        .queryParam("sort", "distance").queryParam("size", size).build())
                 .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
                 .retrieve().body(String.class);
     }
 
     private String keywordSearch(double lat, double lng, int radius, String keyword, int size) {
         return restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
-                .path("/v2/local/search/keyword.json").queryParam("query", keyword)
-                .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
-                .queryParam("sort", "distance").queryParam("size", size).build())
+                        .path("/v2/local/search/keyword.json").queryParam("query", keyword)
+                        .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
+                        .queryParam("sort", "distance").queryParam("size", size).build())
                 .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
                 .retrieve().body(String.class);
     }
 
-    /** 주소 좌표가 비어 있는 온천을 지도 응답 전에 보정한다. 성공한 좌표는 DB에도 저장해 재호출 비용을 줄인다. */
+    /**
+     * 주소 좌표가 비어 있는 온천을 지도 응답 전에 보정한다. 성공한 좌표는 DB에도 저장해 재호출 비용을 줄인다.
+     */
     public void geocode(Place place) {
         if (place.getAddress() == null || place.getAddress().isBlank() || kakaoKey.isBlank()) return;
         try {
             String body = restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
-                    .path("/v2/local/search/address.json").queryParam("query", place.getAddress()).build())
+                            .path("/v2/local/search/address.json").queryParam("query", place.getAddress()).build())
                     .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
                     .retrieve().body(String.class);
             JsonNode document = objectMapper.readTree(body).path("documents").path(0);
@@ -189,9 +199,9 @@ public class ExternalPlaceClient {
             List<NearbyPlaceResponse.Content> result = new ArrayList<>();
             for (String group : groups) {
                 String body = restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
-                        .path("/v2/local/search/category.json").queryParam("category_group_code", group)
-                        .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
-                        .queryParam("sort", "distance").queryParam("size", 15).build())
+                                .path("/v2/local/search/category.json").queryParam("category_group_code", group)
+                                .queryParam("x", lng).queryParam("y", lat).queryParam("radius", radius)
+                                .queryParam("sort", "distance").queryParam("size", 15).build())
                         .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
                         .retrieve().body(String.class);
                 JsonNode documents = objectMapper.readTree(body).path("documents");
@@ -218,13 +228,19 @@ public class ExternalPlaceClient {
 
     private static Double decimal(JsonNode node, String field) {
         String value = text(node, field);
-        try { return value == null ? null : Double.valueOf(value); }
-        catch (NumberFormatException ignored) { return null; }
+        try {
+            return value == null ? null : Double.valueOf(value);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private static Integer integer(JsonNode node, String field) {
         String value = text(node, field);
-        try { return value == null ? null : Integer.valueOf(value); }
-        catch (NumberFormatException ignored) { return null; }
+        try {
+            return value == null ? null : Integer.valueOf(value);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 }

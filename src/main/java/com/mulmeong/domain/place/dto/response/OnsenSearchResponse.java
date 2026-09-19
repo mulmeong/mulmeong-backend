@@ -2,7 +2,9 @@ package com.mulmeong.domain.place.dto.response;
 
 import java.util.List;
 
-/** API-302 응답. */
+/**
+ * API-302 응답.
+ */
 public record OnsenSearchResponse(String keyword, List<Result> results) {
 
     public sealed interface Result permits OnsenResult, RegionResult {

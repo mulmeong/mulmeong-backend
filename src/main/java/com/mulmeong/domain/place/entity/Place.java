@@ -1,24 +1,15 @@
 package com.mulmeong.domain.place.entity;
 
-import java.math.BigDecimal;
-
 import com.mulmeong.global.common.BaseTimeEntity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** places 테이블. 카드/상세(201~206)용 컬럼까지 매핑 완료. */
+import java.math.BigDecimal;
+
+/**
+ * places 테이블. 카드/상세(201~206)용 컬럼까지 매핑 완료.
+ */
 @Getter
 @Entity
 @Table(name = "places")
@@ -26,22 +17,32 @@ import lombok.NoArgsConstructor;
 public class Place extends BaseTimeEntity {
 
     public static Place createExternal(String source, String externalId, String name,
-            Double lat, Double lng, PlaceType placeType, String address, String phone) {
+                                       Double lat, Double lng, PlaceType placeType, String address, String phone) {
         Place place = new Place();
-        place.source = source; place.externalId = externalId; place.name = name;
-        place.lat = lat; place.lng = lng; place.placeType = placeType;
-        place.address = address; place.phone = phone; place.registeredOnsen = false;
+        place.source = source;
+        place.externalId = externalId;
+        place.name = name;
+        place.lat = lat;
+        place.lng = lng;
+        place.placeType = placeType;
+        place.address = address;
+        place.phone = phone;
+        place.registeredOnsen = false;
         return place;
     }
 
     public void updateExternal(String name, Double lat, Double lng, PlaceType placeType,
-            String address, String phone) {
-        this.name = name; this.lat = lat; this.lng = lng; this.placeType = placeType;
-        this.address = address; this.phone = phone;
+                               String address, String phone) {
+        this.name = name;
+        this.lat = lat;
+        this.lng = lng;
+        this.placeType = placeType;
+        this.address = address;
+        this.phone = phone;
     }
 
     public static Place createTourOnsen(String externalId, String name, String address,
-            Double lat, Double lng, String phone, String homepageUrl) {
+                                        Double lat, Double lng, String phone, String homepageUrl) {
         Place place = new Place();
         place.placeType = PlaceType.ONSEN;
         place.registeredOnsen = false;
@@ -57,7 +58,7 @@ public class Place extends BaseTimeEntity {
     }
 
     public void updateTourData(String name, String address, Double lat, Double lng,
-            String phone, String homepageUrl) {
+                               String phone, String homepageUrl) {
         this.name = name;
         this.address = address;
         this.lat = lat;

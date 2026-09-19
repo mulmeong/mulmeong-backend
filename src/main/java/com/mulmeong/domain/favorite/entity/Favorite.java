@@ -1,17 +1,14 @@
 package com.mulmeong.domain.favorite.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.mulmeong.global.common.BaseTimeEntity;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import com.mulmeong.global.common.BaseTimeEntity;
 
-/** favorites 테이블. 지금은 지도 마커의 isFavorite 조회용으로만 쓴다 — 찜 추가/해제(501/503) 구현 때 확장. */
+/**
+ * favorites 테이블. 지금은 지도 마커의 isFavorite 조회용으로만 쓴다 — 찜 추가/해제(501/503) 구현 때 확장.
+ */
 @Getter
 @Entity
 @Table(name = "favorites")
@@ -28,5 +25,8 @@ public class Favorite extends BaseTimeEntity {
     @Column(name = "place_id", nullable = false)
     private Long placeId;
 
-    public Favorite(Long userId, Long placeId) { this.userId = userId; this.placeId = placeId; }
+    public Favorite(Long userId, Long placeId) {
+        this.userId = userId;
+        this.placeId = placeId;
+    }
 }

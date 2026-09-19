@@ -1,18 +1,18 @@
 package com.mulmeong.global.security;
 
-import java.io.IOException;
-
+import com.mulmeong.global.exception.ErrorCode;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
-import com.mulmeong.global.exception.ErrorCode;
+import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
-/** 403 응답도 {@link RestAuthenticationEntryPoint}와 같은 이유로 JSON을 직접 만든다. */
+/**
+ * 403 응답도 {@link RestAuthenticationEntryPoint}와 같은 이유로 JSON을 직접 만든다.
+ */
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 

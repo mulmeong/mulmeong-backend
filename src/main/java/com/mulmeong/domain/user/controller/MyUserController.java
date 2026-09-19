@@ -1,17 +1,5 @@
 package com.mulmeong.domain.user.controller;
 
-import java.util.Arrays;
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.mulmeong.domain.user.dto.request.UpdateMeRequest;
 import com.mulmeong.domain.user.dto.request.WithdrawRequest;
 import com.mulmeong.domain.user.dto.response.LevelResponse;
@@ -23,11 +11,18 @@ import com.mulmeong.domain.user.service.UserService;
 import com.mulmeong.global.common.Level;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
-/** 701 내 프로필 헤더, 703 레벨 시스템, 706 내 정보 수정, 709 계정 탈퇴. */
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * 701 내 프로필 헤더, 703 레벨 시스템, 706 내 정보 수정, 709 계정 탈퇴.
+ */
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -68,7 +63,7 @@ public class MyUserController {
 
     @DeleteMapping("/me")
     public ResponseEntity<Void> withdraw(@AuthenticationPrincipal Long userId,
-            @Valid @RequestBody WithdrawRequest request) {
+                                         @Valid @RequestBody WithdrawRequest request) {
         myProfileService.withdraw(userId, request.password());
         return ResponseEntity.noContent().build();
     }

@@ -1,10 +1,5 @@
 package com.mulmeong.domain.user.service;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.mulmeong.domain.auth.service.RefreshTokenService;
 import com.mulmeong.domain.dart.service.DartService;
 import com.mulmeong.domain.favorite.service.FavoriteService;
@@ -20,8 +15,11 @@ import com.mulmeong.domain.user.dto.response.UpdateMeResponse;
 import com.mulmeong.domain.user.entity.User;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 701(내 프로필)·706(내 정보 수정)·708(공개 프로필)·709(탈퇴)처럼 user 도메인 하나로 끝나지 않는
@@ -119,7 +117,9 @@ public class MyProfileService {
                 user.getCreatedAt().toLocalDate());
     }
 
-    /** 709. 남긴 리뷰·다트 기록은 유지하되 회원 연결만 끊는다 — 찜·팜플렛·매거진 좋아요·포도알은 삭제. */
+    /**
+     * 709. 남긴 리뷰·다트 기록은 유지하되 회원 연결만 끊는다 — 찜·팜플렛·매거진 좋아요·포도알은 삭제.
+     */
     @Transactional
     public void withdraw(Long userId, String password) {
         userService.withdraw(userId, password);

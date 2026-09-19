@@ -1,29 +1,37 @@
 package com.mulmeong.domain.upload.service;
 
-import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import com.mulmeong.domain.upload.dto.request.PresignRequest;
 import com.mulmeong.domain.upload.dto.response.PresignResponse;
 import com.mulmeong.domain.upload.entity.UploadDomain;
-import com.mulmeong.global.exception.*;
+import com.mulmeong.global.exception.BusinessException;
+import com.mulmeong.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-@Service @RequiredArgsConstructor
+import java.time.Duration;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
 public class UploadService {
     private static final long MAX_SIZE = 10 * 1024 * 1024;
     private static final Set<String> IMAGE_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
     private final S3Presigner presigner;
-    @Value("${app.s3.bucket:}") private String bucket;
-    @Value("${app.s3.cloudfront-base-url:}") private String cloudfrontBaseUrl;
-    @Value("${app.s3.presign-expiry-seconds:300}") private int expirySeconds;
+    @Value("${app.s3.bucket:}")
+    private String bucket;
+    @Value("${app.s3.cloudfront-base-url:}")
+    private String cloudfrontBaseUrl;
+    @Value("${app.s3.presign-expiry-seconds:300}")
+    private int expirySeconds;
 
     public PresignResponse presign(PresignRequest request) {
         if (request.domain() != UploadDomain.REVIEW || request.files().size() > 5) {
@@ -40,7 +48,8 @@ public class UploadService {
 
     private PresignResponse.Item createItem(String prefix, PresignRequest.FileRequest file) {
         if (!IMAGE_TYPES.contains(file.contentType())) throw new BusinessException(ErrorCode.UNSUPPORTED_IMAGE_TYPE);
-        if (file.size() == null || file.size() <= 0 || file.size() > MAX_SIZE) throw new BusinessException(ErrorCode.IMAGE_TOO_LARGE);
+        if (file.size() == null || file.size() <= 0 || file.size() > MAX_SIZE)
+            throw new BusinessException(ErrorCode.IMAGE_TOO_LARGE);
         String extension = file.contentType().substring(file.contentType().indexOf('/') + 1).replace("jpeg", "jpg");
         String key = prefix + UUID.randomUUID() + "." + extension;
         PutObjectRequest object = PutObjectRequest.builder().bucket(bucket).key(key).contentType(file.contentType()).contentLength(file.size()).build();

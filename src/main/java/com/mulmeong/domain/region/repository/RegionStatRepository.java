@@ -1,14 +1,13 @@
 package com.mulmeong.domain.region.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.mulmeong.domain.region.entity.RegionStat;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.Modifying;
 
-import com.mulmeong.domain.region.entity.RegionStat;
+import java.util.List;
+import java.util.Optional;
 
 public interface RegionStatRepository extends JpaRepository<RegionStat, Long> {
 
@@ -31,7 +30,7 @@ public interface RegionStatRepository extends JpaRepository<RegionStat, Long> {
             do update set visit_count = region_stats.visit_count + 1
             """, nativeQuery = true)
     void incrementVisitCount(@Param("userId") Long userId, @Param("sidoCode") String sidoCode,
-            @Param("sigunguCode") String sigunguCode);
+                             @Param("sigunguCode") String sigunguCode);
 
     @Modifying
     @Query(value = """

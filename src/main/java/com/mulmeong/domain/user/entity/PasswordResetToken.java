@@ -1,16 +1,11 @@
 package com.mulmeong.domain.user.entity;
 
-import java.time.OffsetDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.OffsetDateTime;
 
 /**
  * password_reset_tokens 테이블. AUTH-03(비밀번호 재설정)은 이번 작업 범위 밖 —
@@ -29,7 +24,9 @@ public class PasswordResetToken {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    /** 원본 토큰은 메일로만 발송하고, DB엔 SHA-256 해시만 저장한다. */
+    /**
+     * 원본 토큰은 메일로만 발송하고, DB엔 SHA-256 해시만 저장한다.
+     */
     @Column(name = "token_hash", nullable = false, unique = true)
     private String tokenHash;
 

@@ -1,23 +1,23 @@
 package com.mulmeong.domain.place.service;
 
-import java.util.List;
-import java.util.Locale;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mulmeong.domain.place.dto.response.ExternalDirectionsResponse;
+import com.mulmeong.global.exception.BusinessException;
+import com.mulmeong.global.exception.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mulmeong.domain.place.dto.response.ExternalDirectionsResponse;
-import com.mulmeong.global.exception.BusinessException;
-import com.mulmeong.global.exception.ErrorCode;
+import java.util.List;
+import java.util.Locale;
 
-import lombok.extern.slf4j.Slf4j;
-
-/** 903 길찾기 프록시. 카카오모빌리티(CAR)와 카카오맵(TRANSIT·WALK·BIKE) 응답을 정규화된 형태로 합쳐준다. */
+/**
+ * 903 길찾기 프록시. 카카오모빌리티(CAR)와 카카오맵(TRANSIT·WALK·BIKE) 응답을 정규화된 형태로 합쳐준다.
+ */
 @Component
 @Slf4j
 public class ExternalDirectionsClient {
@@ -25,14 +25,15 @@ public class ExternalDirectionsClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${external.kakao.rest-api-key:}") private String kakaoKey;
+    @Value("${external.kakao.rest-api-key:}")
+    private String kakaoKey;
 
     public ExternalDirectionsClient() {
         this.restClient = RestClient.builder().build();
     }
 
     public ExternalDirectionsResponse route(String mode, double originLat, double originLng,
-            double destLat, double destLng, boolean includePath) {
+                                            double destLat, double destLng, boolean includePath) {
         String normalized = normalizeMode(mode);
         if (kakaoKey.isBlank()) {
             throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
@@ -40,8 +41,10 @@ public class ExternalDirectionsClient {
         try {
             return switch (normalized) {
                 case "CAR" -> carRoute(originLat, originLng, destLat, destLng, includePath);
-                case "WALK" -> simpleRoute("WALK", "/v2/routing/walk", originLat, originLng, destLat, destLng, includePath);
-                case "BICYCLE" -> simpleRoute("BICYCLE", "/v2/routing/bicycle", originLat, originLng, destLat, destLng, includePath);
+                case "WALK" ->
+                        simpleRoute("WALK", "/v2/routing/walk", originLat, originLng, destLat, destLng, includePath);
+                case "BICYCLE" ->
+                        simpleRoute("BICYCLE", "/v2/routing/bicycle", originLat, originLng, destLat, destLng, includePath);
                 default -> transitRoute(originLat, originLng, destLat, destLng, includePath);
             };
         } catch (BusinessException e) {
@@ -64,12 +67,12 @@ public class ExternalDirectionsClient {
     }
 
     private ExternalDirectionsResponse carRoute(double originLat, double originLng,
-            double destLat, double destLng, boolean includePath) throws Exception {
+                                                double destLat, double destLng, boolean includePath) throws Exception {
         String body = restClient.get().uri(uri -> uri.scheme("https")
-                .host("apis-navi.kakaomobility.com").path("/v1/directions")
-                .queryParam("origin", point(originLng, originLat))
-                .queryParam("destination", point(destLng, destLat))
-                .queryParam("summary", true).build())
+                        .host("apis-navi.kakaomobility.com").path("/v1/directions")
+                        .queryParam("origin", point(originLng, originLat))
+                        .queryParam("destination", point(destLng, destLat))
+                        .queryParam("summary", true).build())
                 .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
                 .retrieve().body(String.class);
         JsonNode routes = objectMapper.readTree(body).path("routes");
@@ -85,7 +88,7 @@ public class ExternalDirectionsClient {
     }
 
     private ExternalDirectionsResponse simpleRoute(String responseMode, String path, double originLat, double originLng,
-            double destLat, double destLng, boolean includePath) {
+                                                   double destLat, double destLng, boolean includePath) {
         Leg leg = kakaoMapRoute(path, originLat, originLng, destLat, destLng);
         List<List<Double>> routePath = includePath ? straightPath(originLat, originLng, destLat, destLng) : List.of();
         return new ExternalDirectionsResponse(responseMode, leg.distanceM(), leg.durationMin(), null,
@@ -93,12 +96,12 @@ public class ExternalDirectionsClient {
     }
 
     private ExternalDirectionsResponse transitRoute(double originLat, double originLng,
-            double destLat, double destLng, boolean includePath) throws Exception {
+                                                    double destLat, double destLng, boolean includePath) throws Exception {
         String body = restClient.get().uri(uri -> uri.scheme("https")
-                .host("dapi.kakao.com").path("/v2/routing/publictraffic")
-                .queryParam("start_x", originLng).queryParam("start_y", originLat)
-                .queryParam("end_x", destLng).queryParam("end_y", destLat)
-                .queryParam("input_coord", "WGS84").queryParam("output_coord", "WGS84").build())
+                        .host("dapi.kakao.com").path("/v2/routing/publictraffic")
+                        .queryParam("start_x", originLng).queryParam("start_y", originLat)
+                        .queryParam("end_x", destLng).queryParam("end_y", destLat)
+                        .queryParam("input_coord", "WGS84").queryParam("output_coord", "WGS84").build())
                 .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
                 .retrieve().body(String.class);
         JsonNode routes = objectMapper.readTree(body).path("routes");
@@ -123,10 +126,10 @@ public class ExternalDirectionsClient {
 
     private Leg kakaoMapRoute(String path, double originLat, double originLng, double destLat, double destLng) {
         String body = restClient.get().uri(uri -> uri.scheme("https")
-                .host("dapi.kakao.com").path(path)
-                .queryParam("start_x", originLng).queryParam("start_y", originLat)
-                .queryParam("end_x", destLng).queryParam("end_y", destLat)
-                .queryParam("input_coord", "WGS84").queryParam("output_coord", "WGS84").build())
+                        .host("dapi.kakao.com").path(path)
+                        .queryParam("start_x", originLng).queryParam("start_y", originLat)
+                        .queryParam("end_x", destLng).queryParam("end_y", destLat)
+                        .queryParam("input_coord", "WGS84").queryParam("output_coord", "WGS84").build())
                 .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
                 .retrieve().body(String.class);
         JsonNode parsed;

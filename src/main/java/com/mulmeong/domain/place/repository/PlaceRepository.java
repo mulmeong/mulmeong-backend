@@ -1,16 +1,15 @@
 package com.mulmeong.domain.place.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.mulmeong.domain.place.entity.AccessLevel;
+import com.mulmeong.domain.place.entity.Place;
+import com.mulmeong.domain.place.entity.PlaceType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.mulmeong.domain.place.entity.AccessLevel;
-import com.mulmeong.domain.place.entity.Place;
-import com.mulmeong.domain.place.entity.PlaceType;
+import java.util.List;
+import java.util.Optional;
 
 public interface PlaceRepository extends JpaRepository<Place, Long> {
 
@@ -27,7 +26,7 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
             ORDER BY p.name
             """)
     List<Place> findAllOnsensForMap(@Param("accessLevel") AccessLevel accessLevel,
-            @Param("hasOutdoor") Boolean hasOutdoor, @Param("registeredOnly") boolean registeredOnly);
+                                    @Param("hasOutdoor") Boolean hasOutdoor, @Param("registeredOnly") boolean registeredOnly);
 
     @Query(value = """
             SELECT * FROM places p
@@ -148,7 +147,7 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
               AND p.lng BETWEEN :minLng AND :maxLng
             """)
     List<Place> findNearbyPlaces(@Param("minLat") double minLat, @Param("maxLat") double maxLat,
-            @Param("minLng") double minLng, @Param("maxLng") double maxLng);
+                                 @Param("minLng") double minLng, @Param("maxLng") double maxLng);
 
     @Query("""
             SELECT new com.mulmeong.domain.place.repository.RegionAggregate(
@@ -164,7 +163,9 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
             """)
     List<RegionAggregate> searchRegionsByName(@Param("keyword") String keyword, Pageable pageable);
 
-    /** 화면 중심 좌표에서 가장 가까운 온천의 sido_code (centerSidoCode 응답용, MVP: 역지오코딩 대신 최근접 온천 기준). */
+    /**
+     * 화면 중심 좌표에서 가장 가까운 온천의 sido_code (centerSidoCode 응답용, MVP: 역지오코딩 대신 최근접 온천 기준).
+     */
     @Query(value = """
             SELECT p.sido_code FROM places p
             WHERE p.place_type = 'ONSEN' AND p.sido_code IS NOT NULL

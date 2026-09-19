@@ -1,9 +1,8 @@
 package com.mulmeong.global.exception;
 
-import org.springframework.http.HttpStatus;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 /**
  * {@code name()} is the wire "code" sent to clients — keep names stable, they're part of the API contract.

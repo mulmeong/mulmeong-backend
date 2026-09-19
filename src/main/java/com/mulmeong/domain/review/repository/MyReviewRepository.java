@@ -1,17 +1,18 @@
 package com.mulmeong.domain.review.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.mulmeong.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.mulmeong.domain.user.entity.User;
+import java.util.List;
+import java.util.Optional;
 
-/** 701~705·709용 읽기 최적화 네이티브 쿼리. 601~606의 쓰기 로직은 {@link ReviewRepository}가 담당한다. */
+/**
+ * 701~705·709용 읽기 최적화 네이티브 쿼리. 601~606의 쓰기 로직은 {@link ReviewRepository}가 담당한다.
+ */
 public interface MyReviewRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
@@ -36,13 +37,13 @@ public interface MyReviewRepository extends JpaRepository<User, Long> {
               r.created_at DESC
             """,
             countQuery = """
-            SELECT COUNT(*) FROM reviews r JOIN places p ON p.id = r.place_id
-            WHERE r.user_id = :userId AND r.deleted_at IS NULL
-              AND (:regionCode IS NULL OR p.sido_code = :regionCode OR p.sigungu_code = :regionCode)
-            """,
+                    SELECT COUNT(*) FROM reviews r JOIN places p ON p.id = r.place_id
+                    WHERE r.user_id = :userId AND r.deleted_at IS NULL
+                      AND (:regionCode IS NULL OR p.sido_code = :regionCode OR p.sigungu_code = :regionCode)
+                    """,
             nativeQuery = true)
     Page<MyReviewRow> findMyReviews(@Param("userId") Long userId, @Param("regionCode") String regionCode,
-            @Param("sortCode") int sortCode, Pageable pageable);
+                                    @Param("sortCode") int sortCode, Pageable pageable);
 
     @Query(value = """
             SELECT p.sido_code AS regionCode, p.sido AS name, COUNT(*) AS count
@@ -86,9 +87,11 @@ public interface MyReviewRepository extends JpaRepository<User, Long> {
             WHERE r.user_id = :userId AND r.deleted_at IS NULL AND p.sigungu_code = :sigunguCode
             """, nativeQuery = true)
     List<Long> findDistinctPlaceIdsByUserAndSigungu(@Param("userId") Long userId,
-            @Param("sigunguCode") String sigunguCode);
+                                                    @Param("sigunguCode") String sigunguCode);
 
-    /** 708 recentOnsens: visited_at 최근순 3곳, 같은 온천 중복 제외. */
+    /**
+     * 708 recentOnsens: visited_at 최근순 3곳, 같은 온천 중복 제외.
+     */
     @Query(value = """
             SELECT DISTINCT ON (r.place_id) r.place_id AS onsenId, p.name AS name,
               (SELECT ri.image_url FROM review_images ri WHERE ri.review_id = r.id ORDER BY ri.sort_order LIMIT 1) AS thumbnail,

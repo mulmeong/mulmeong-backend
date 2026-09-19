@@ -1,7 +1,8 @@
 package com.mulmeong.global.exception;
 
-import java.util.List;
-
+import com.mulmeong.global.exception.ErrorResponse.FieldErrorDetail;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -12,10 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import com.mulmeong.global.exception.ErrorResponse.FieldErrorDetail;
-
-import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 
 /**
  * Turns every error into the common {@link ErrorResponse} shape.
@@ -50,7 +48,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+                                                                  HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         List<FieldErrorDetail> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
                 .map(fe -> new FieldErrorDetail(fe.getField(), fe.getDefaultMessage()))
                 .toList();
@@ -58,10 +56,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(ErrorResponse.of(ErrorCode.VALIDATION_FAILED, fieldErrors));
     }
 
-    /** Wrap the built-in MVC error responses (404, 405, malformed body, bad query param, ...). */
+    /**
+     * Wrap the built-in MVC error responses (404, 405, malformed body, bad query param, ...).
+     */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body,
-            HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+                                                             HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         ErrorCode code = switch (statusCode.value()) {
             case 404 -> ErrorCode.RESOURCE_NOT_FOUND;
             case 405 -> ErrorCode.METHOD_NOT_ALLOWED;

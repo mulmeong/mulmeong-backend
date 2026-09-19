@@ -1,8 +1,8 @@
 package com.mulmeong.domain.place.dto.request;
 
-import java.util.List;
-
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.List;
 
 public record NearbyRerollRequest(@NotBlank String category, List<String> excludeIds) {
     public NearbyRerollRequest {

@@ -1,28 +1,17 @@
 package com.mulmeong.domain.review.entity;
 
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-
-import com.mulmeong.global.common.BaseTimeEntity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OrderBy;
-import java.util.ArrayList;
-import java.util.List;
 import com.mulmeong.domain.user.entity.User;
-import org.hibernate.annotations.Formula;
+import com.mulmeong.global.common.BaseTimeEntity;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Formula;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -81,7 +70,7 @@ public class Review extends BaseTimeEntity {
     private List<ReviewImage> images = new ArrayList<>();
 
     public static Review create(Long userId, Long placeId, short rating, short cleanliness, short crowdedness,
-            short facilityScore, String visitTimeSlot, LocalDate visitedAt, String body) {
+                                short facilityScore, String visitTimeSlot, LocalDate visitedAt, String body) {
         Review review = new Review();
         review.userId = userId;
         review.placeId = placeId;
@@ -96,7 +85,7 @@ public class Review extends BaseTimeEntity {
     }
 
     public void update(Short rating, Short cleanliness, Short crowdedness, Short facilityScore, String visitTimeSlot,
-            String body) {
+                       String body) {
         if (rating != null) this.rating = rating;
         if (cleanliness != null) this.cleanliness = cleanliness;
         if (crowdedness != null) this.crowdedness = crowdedness;
@@ -105,7 +94,9 @@ public class Review extends BaseTimeEntity {
         if (body != null) this.body = body;
     }
 
-    public void delete(OffsetDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public void delete(OffsetDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 
     public boolean isDeleted() {
         return deletedAt != null;

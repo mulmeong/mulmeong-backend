@@ -1,9 +1,14 @@
 package com.mulmeong.global.config;
 
+import com.mulmeong.domain.auth.jwt.JwtTokenProvider;
+import com.mulmeong.global.security.JwtAuthenticationFilter;
+import com.mulmeong.global.security.RestAccessDeniedHandler;
+import com.mulmeong.global.security.RestAuthenticationEntryPoint;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -11,13 +16,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import com.mulmeong.domain.auth.jwt.JwtTokenProvider;
-import com.mulmeong.global.security.JwtAuthenticationFilter;
-import com.mulmeong.global.security.RestAccessDeniedHandler;
-import com.mulmeong.global.security.RestAuthenticationEntryPoint;
-
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor

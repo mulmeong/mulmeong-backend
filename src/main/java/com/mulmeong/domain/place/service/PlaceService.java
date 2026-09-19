@@ -1,43 +1,23 @@
 package com.mulmeong.domain.place.service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.stream.Collectors;
-
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.mulmeong.domain.favorite.service.FavoriteService;
 import com.mulmeong.domain.place.dto.request.NearbyRerollRequest;
-import com.mulmeong.domain.place.dto.response.ExternalDirectionsResponse;
-import com.mulmeong.domain.place.dto.response.MapOnsensResponse;
-import com.mulmeong.domain.place.dto.response.OnsenCardResponse;
-import com.mulmeong.domain.place.dto.response.OnsenDetailResponse;
-import com.mulmeong.domain.place.dto.response.OnsenDirectionsResponse;
-import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
-import com.mulmeong.domain.place.dto.response.OnsenSearchResponse;
-import com.mulmeong.domain.place.dto.response.OnsenListResponse;
+import com.mulmeong.domain.place.dto.response.*;
 import com.mulmeong.domain.place.entity.AccessLevel;
 import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.domain.place.entity.PlaceImage;
 import com.mulmeong.domain.place.entity.PlaceType;
-import com.mulmeong.domain.place.repository.PlaceImageRepository;
-import com.mulmeong.domain.place.repository.PlaceRepository;
-import com.mulmeong.domain.place.repository.RegionAggregate;
-import com.mulmeong.domain.place.repository.SigunguAggregate;
-import com.mulmeong.domain.place.repository.ReviewAggregate;
-import com.mulmeong.domain.place.repository.ReviewAggregateRepository;
+import com.mulmeong.domain.place.repository.*;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -94,7 +74,7 @@ public class PlaceService {
 
     @Transactional(readOnly = true)
     public MapOnsensResponse getMapOnsens(double swLat, double swLng, double neLat, double neLng, int zoom,
-            AccessLevel accessLevel, Boolean hasOutdoor, boolean registeredOnly, Long userId) {
+                                          AccessLevel accessLevel, Boolean hasOutdoor, boolean registeredOnly, Long userId) {
         validateBbox(swLat, swLng, neLat, neLng);
 
         MapOnsensResponse.Bbox bbox = new MapOnsensResponse.Bbox(swLat, swLng, neLat, neLng);
@@ -182,7 +162,7 @@ public class PlaceService {
         AccessLevel accessLevel = place.getAccessLevel();
         OnsenDetailResponse.NearestStation nearestStation = place.getStation() == null ? null
                 : new OnsenDetailResponse.NearestStation(place.getStation().getName(), place.getStation().getLat(),
-                        place.getStation().getLng(), place.getStationToPlaceDesc());
+                place.getStation().getLng(), place.getStationToPlaceDesc());
         boolean isFavorite = favoriteService.getFavoritePlaceIds(userId, List.of(onsenId)).contains(onsenId);
         return new OnsenDetailResponse(
                 place.getId(), place.getName(), place.isRegisteredOnsen(),
@@ -205,7 +185,7 @@ public class PlaceService {
 
     @Transactional(readOnly = true)
     public OnsenDirectionsResponse getOnsenDirections(Long onsenId, Double originLat, Double originLng, String mode,
-            boolean includePath) {
+                                                      boolean includePath) {
         Place place = findOnsenOrThrow(onsenId);
         String normalizedMode = mode == null ? "TRANSIT" : mode.toUpperCase(Locale.ROOT);
         if ("CAR".equals(normalizedMode) && (originLat == null || originLng == null)) {
@@ -214,7 +194,7 @@ public class PlaceService {
 
         OnsenDirectionsResponse.NearestStation nearestStation = place.getStation() == null ? null
                 : new OnsenDirectionsResponse.NearestStation(
-                        place.getStation().getName(), place.getStation().getLat(), place.getStation().getLng());
+                place.getStation().getName(), place.getStation().getLat(), place.getStation().getLng());
 
         List<OnsenDirectionsResponse.Leg> legs = new ArrayList<>();
         Integer originLegDuration = null;
@@ -237,7 +217,7 @@ public class PlaceService {
 
         String kakaoDeepLink = place.getLat() == null || place.getLng() == null ? null
                 : String.format(Locale.ROOT, "https://map.kakao.com/link/to/%s,%f,%f",
-                        place.getName(), place.getLat(), place.getLng());
+                place.getName(), place.getLat(), place.getLng());
         return new OnsenDirectionsResponse(place.getId(), nearestStation, legs, originLegDuration, kakaoDeepLink);
     }
 
@@ -356,14 +336,17 @@ public class PlaceService {
         return place;
     }
 
-    /** 리뷰 도메인이 방문 인증에 필요한 온천 식별·지역 코드만 받는 경계 DTO. */
+    /**
+     * 리뷰 도메인이 방문 인증에 필요한 온천 식별·지역 코드만 받는 경계 DTO.
+     */
     @Transactional(readOnly = true)
     public OnsenVisitInfo getOnsenVisitInfo(Long onsenId) {
         Place place = findOnsenOrThrow(onsenId);
         return new OnsenVisitInfo(place.getId(), place.getSidoCode(), place.getSigunguCode(), place.getSido(), place.getSigungu());
     }
 
-    public record OnsenVisitInfo(Long onsenId, String sidoCode, String sigunguCode, String sido, String sigungu) {}
+    public record OnsenVisitInfo(Long onsenId, String sidoCode, String sigunguCode, String sido, String sigungu) {
+    }
 
     private void validateBbox(double swLat, double swLng, double neLat, double neLng) {
         if (!Double.isFinite(swLat) || !Double.isFinite(swLng)
