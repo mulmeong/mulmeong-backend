@@ -24,6 +24,9 @@ public enum ErrorCode {
     ACCOUNT_WITHDRAWN(HttpStatus.FORBIDDEN, "탈퇴한 계정입니다"),
     REFRESH_TOKEN_MISSING(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다"),
     REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "다시 로그인해주세요"),
+    RESET_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "재설정 링크가 유효하지 않습니다"),
+    RESET_TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "재설정 링크가 만료되었습니다"),
+    SAME_AS_OLD_PASSWORD(HttpStatus.BAD_REQUEST, "기존 비밀번호와 다른 비밀번호를 입력해주세요"),
 
     // User / Signup
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다"),
