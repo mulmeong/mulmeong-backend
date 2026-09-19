@@ -12,6 +12,6 @@ public record OnsenReviewStatsResponse(Long onsenId, long reviewCount, Double av
     public record Metric(Double avg, String label) {
     }
 
-    public record VisitTime(Map<String, Long> counts, String topLabel) {
+    public record VisitTime(long MORNING, long AFTERNOON, long EVENING, long NIGHT, String topLabel) {
     }
 }
