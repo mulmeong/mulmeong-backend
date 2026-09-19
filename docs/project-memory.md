@@ -91,6 +91,7 @@ S3_PUBLIC_BASE_URL=https://dljh8zx4kwdv3.cloudfront.net
 - 따라서 기능 구현 후 메인 머지 시 운영 배포가 갱신된다.
 - 리뷰 이미지 업로드는 인프라만 구축되어 있고, 리뷰 저장 API와 프론트 연결까지 완료되어야 실제 동작한다.
 - 운영 후 정리: 로컬 개발용 IAM 사용자 삭제, S3 CORS AllowedOrigins를 실제 도메인으로 제한.
+- 2026-09-19: `prod,seed` 프로필 배포 중 `SigunguRegionService` 생성자에 주입할 `ObjectMapper` 빈이 없어 기동이 중단됐다. 로그의 핵심은 `No qualifying bean of type 'com.fasterxml.jackson.databind.ObjectMapper' available`이다. `spring-boot-starter-jackson` 추가 후에도 동일 오류가 재현됐으므로, `JacksonConfig`에서 `@Bean ObjectMapper`를 명시적으로 등록해야 한다. 같은 오류가 발생하면 배포 이미지에 `JacksonConfig`가 포함됐는지와 컨테이너 로그를 먼저 확인한다.
 
 ## 미확인 작업
 
