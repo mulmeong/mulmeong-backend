@@ -117,6 +117,19 @@ public class UserService {
     }
 
     /**
+     * 다트 공유(403)가 "던진 사람" 라벨만 필요할 때 쓰는 경계 조회. 탈퇴 회원은 비어 있다.
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> nicknameOf(Long userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        return userRepository.findById(userId)
+                .filter(user -> !user.isWithdrawn())
+                .map(User::getNickname);
+    }
+
+    /**
      * 방문 인증 흐름 직렬화 및 레벨 전후 계산용. 카운트 변경은 아래 UPDATE 쿼리로만 한다.
      */
     @Transactional

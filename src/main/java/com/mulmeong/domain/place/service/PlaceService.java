@@ -348,6 +348,20 @@ public class PlaceService {
     public record OnsenVisitInfo(Long onsenId, String sidoCode, String sigunguCode, String sido, String sigungu) {
     }
 
+    /**
+     * 다트 공유(403)처럼 대표 이미지 한 장만 필요한 도메인에 주는 경계 조회.
+     */
+    @Transactional(readOnly = true)
+    public String thumbnailOf(Long placeId) {
+        if (placeId == null) {
+            return null;
+        }
+        return placeImageRepository.findByPlaceIdOrderBySortOrder(placeId).stream()
+                .findFirst()
+                .map(PlaceImage::getImageUrl)
+                .orElse(null);
+    }
+
     private void validateBbox(double swLat, double swLng, double neLat, double neLng) {
         if (!Double.isFinite(swLat) || !Double.isFinite(swLng)
                 || !Double.isFinite(neLat) || !Double.isFinite(neLng)
