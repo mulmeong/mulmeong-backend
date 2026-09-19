@@ -103,6 +103,21 @@ public class UserService {
         return userRepository.findByProfileShareToken(token);
     }
 
+    /** 방문 인증 흐름 직렬화 및 레벨 전후 계산용. 카운트 변경은 아래 UPDATE 쿼리로만 한다. */
+    @Transactional
+    public User lockActiveUser(Long userId) {
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.isWithdrawn()) throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        return user;
+    }
+
+    @Transactional
+    public void incrementVisitCount(Long userId) { userRepository.incrementVisitCount(userId); }
+
+    @Transactional
+    public void decrementVisitCount(Long userId) { userRepository.decrementVisitCount(userId); }
+
     /** 30일 이내 변경했으면 다음 변경 가능 시각, 아니면 null (지금 바로 가능). */
     public OffsetDateTime nicknameEditableAt(User user) {
         if (user.getNicknameChangedAt() == null) return null;

@@ -356,6 +356,15 @@ public class PlaceService {
         return place;
     }
 
+    /** 리뷰 도메인이 방문 인증에 필요한 온천 식별·지역 코드만 받는 경계 DTO. */
+    @Transactional(readOnly = true)
+    public OnsenVisitInfo getOnsenVisitInfo(Long onsenId) {
+        Place place = findOnsenOrThrow(onsenId);
+        return new OnsenVisitInfo(place.getId(), place.getSidoCode(), place.getSigunguCode(), place.getSido(), place.getSigungu());
+    }
+
+    public record OnsenVisitInfo(Long onsenId, String sidoCode, String sigunguCode, String sido, String sigungu) {}
+
     private void validateBbox(double swLat, double swLng, double neLat, double neLng) {
         if (!Double.isFinite(swLat) || !Double.isFinite(swLng)
                 || !Double.isFinite(neLat) || !Double.isFinite(neLng)

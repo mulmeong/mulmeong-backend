@@ -116,6 +116,27 @@ public class RegionStatService {
         regionStatRepository.deleteByUserId(userId);
     }
 
+    @Transactional
+    public void incrementVisitCount(Long userId, String sidoCode, String sigunguCode) {
+        if (hasRegionCodes(sidoCode, sigunguCode)) regionStatRepository.incrementVisitCount(userId, sidoCode, sigunguCode);
+    }
+
+    @Transactional
+    public void decrementVisitCount(Long userId, String sigunguCode) {
+        if (sigunguCode != null && !sigunguCode.isBlank()) regionStatRepository.decrementVisitCount(userId, sigunguCode);
+    }
+
+    @Transactional(readOnly = true)
+    public int visitCount(Long userId, String sigunguCode) {
+        if (sigunguCode == null || sigunguCode.isBlank()) return 0;
+        return regionStatRepository.findByUserIdAndSigunguCode(userId, sigunguCode)
+                .map(RegionStat::getVisitCount).orElse(0);
+    }
+
+    private boolean hasRegionCodes(String sidoCode, String sigunguCode) {
+        return sidoCode != null && !sidoCode.isBlank() && sigunguCode != null && !sigunguCode.isBlank();
+    }
+
     public record VisitedRegionSummary(String regionCode, String name, int visitCount, double density) {
     }
 }
