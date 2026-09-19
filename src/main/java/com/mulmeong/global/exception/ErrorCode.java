@@ -60,6 +60,9 @@ public enum ErrorCode {
     ORIGIN_REQUIRED(HttpStatus.BAD_REQUEST, "자차 길찾기는 출발지 좌표가 필요합니다"),
     INVALID_ORIGIN(HttpStatus.BAD_REQUEST, "출발지 좌표가 없습니다."),
     DART_CANDIDATE_UNAVAILABLE(HttpStatus.INTERNAL_SERVER_ERROR, "다트 후보 데이터를 준비해주세요"),
+    DART_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 다트 결과입니다"),
+    DART_EXPIRED(HttpStatus.GONE, "만료된 다트예요"),
+    OUT_OF_SERVICE_AREA(HttpStatus.BAD_REQUEST, "국내 위치만 지원해요"),
     ROUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "경로를 찾을 수 없습니다"),
     EXTERNAL_API_FAILED(HttpStatus.BAD_GATEWAY, "외부 서비스 호출에 실패했습니다"),
     EXTERNAL_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "외부 서비스 호출 한도를 초과했습니다");

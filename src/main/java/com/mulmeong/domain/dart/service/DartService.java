@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mulmeong.domain.dart.dto.DartRequest;
 import com.mulmeong.domain.dart.dto.DartResponse;
 import com.mulmeong.domain.dart.dto.OriginResponse;
+import com.mulmeong.domain.dart.dto.DartSharedResponse;
 import com.mulmeong.domain.dart.entity.DartCandidate;
 import com.mulmeong.domain.dart.repository.DartCandidateRepository;
 import com.mulmeong.domain.place.entity.AccessLevel;
+import com.mulmeong.domain.place.service.PlaceService;
+import com.mulmeong.domain.user.service.UserService;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
+import com.mulmeong.global.util.RandomTokenGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,11 +23,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class DartService {
     private static final int[] LIMIT_STEPS = {90, 120, 180, 240};
+    private static final String SHARE_BASE = "https://mulmeong.app/dart/";
+    private static final int SHARE_TOKEN_LENGTH = 8;
+    private static final int SHARE_EXPIRY_DAYS = 30;
+    private static final String ANONYMOUS_THROWER = "익명의 물멍러";
     @Value("${app.dart.road-factor:1.3}")
     private double roadFactor;
     @Value("${app.dart.car-kmh:70}")
@@ -45,7 +54,9 @@ public class DartService {
 
     private final DartCandidateRepository candidateRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+    private final UserService userService;
+    private final PlaceService placeService;
 
     @Transactional
     public DartResponse throwDart(DartRequest request, Long userId, boolean reroll) {
@@ -95,9 +106,10 @@ public class DartService {
         Integer relaxedFrom = relaxSteps == 0 ? null : request.maxMinutes();
         String relaxMessage = relaxSteps == 0 ? null
                 : relaxMessage(request.maxMinutes(), initialCount, usedLimit);
-        Long dartId = saveLog(request, result, pool.size(), relaxSteps > 0, reroll, userId,
+        // 공유 링크에 PK를 노출하지 않으려고 dartId 자체를 base62 토큰으로 내려준다 (401·403).
+        String dartId = saveLog(request, result, pool.size(), relaxSteps > 0, reroll, userId,
                 relaxSteps == 0 ? null : request.maxMinutes());
-        return new DartResponse(dartId, pool.size(), relaxSteps > 0, relaxedFrom, relaxMessage,
+        return new DartResponse(dartId, SHARE_BASE + dartId, pool.size(), relaxSteps > 0, relaxedFrom, relaxMessage,
                 toResult(request, result, minutes));
     }
 
@@ -113,6 +125,52 @@ public class DartService {
         return List.of(new OriginResponse("서울역", 37.5563, 126.9723), new OriginResponse("수원역", 37.2659, 127.0001),
                 new OriginResponse("대전역", 36.3323, 127.4345), new OriginResponse("대구역", 35.8760, 128.5960),
                 new OriginResponse("부산역", 35.1151, 129.0414), new OriginResponse("광주송정역", 35.1370, 126.7910));
+    }
+
+    @Transactional(readOnly = true)
+    public DartSharedResponse shared(String shareToken, Long viewerId) {
+        DartSharedRow row = jdbcTemplate.query("""
+                        SELECT d.user_id, d.conditions::text AS conditions, d.is_relaxed, d.throw_count, d.created_at,
+                               d.start_location, d.start_lat, d.start_lng,
+                               c.name, c.sido, c.lat, c.lng, c.place_id, c.access_level, c.transit_minutes
+                        FROM dart_logs d
+                        JOIN dart_candidates c ON c.id = d.candidate_id
+                        WHERE d.share_token = ?
+                        """, rs -> rs.next() ? new DartSharedRow(rs.getObject("user_id", Long.class),
+                rs.getString("conditions"), rs.getBoolean("is_relaxed"), rs.getInt("throw_count"),
+                rs.getObject("created_at", OffsetDateTime.class), rs.getString("start_location"),
+                rs.getDouble("start_lat"), rs.getDouble("start_lng"),
+                rs.getString("name"), rs.getString("sido"), rs.getDouble("lat"), rs.getDouble("lng"),
+                rs.getObject("place_id", Long.class), rs.getString("access_level"),
+                rs.getObject("transit_minutes", Integer.class)) : null, shareToken);
+        if (row == null) {
+            throw new BusinessException(ErrorCode.DART_NOT_FOUND);
+        }
+        OffsetDateTime expiresAt = row.createdAt().plusDays(SHARE_EXPIRY_DAYS);
+        if (expiresAt.isBefore(OffsetDateTime.now())) {
+            throw new BusinessException(ErrorCode.DART_EXPIRED);
+        }
+
+        DartRequest request = readConditions(row.conditions());
+        DartSharedResponse.Conditions conditions = new DartSharedResponse.Conditions(row.originLabel(),
+                request.transport(), request.maxMinutes(), request.stayType());
+        int minutes = estimateMinutes(row.startLat(), row.startLng(), row.lat(), row.lng(),
+                row.transitMinutes(), row.accessLevel(), request.transport());
+        DartSharedResponse.Result result = new DartSharedResponse.Result(row.placeId(), row.name(), row.sido(),
+                row.lat(), row.lng(), placeService.thumbnailOf(row.placeId()), minutes);
+        String thrownBy = userService.nicknameOf(row.userId()).orElse(ANONYMOUS_THROWER);
+        boolean isMine = row.userId() != null && row.userId().equals(viewerId);
+        return new DartSharedResponse(shareToken, conditions, result, row.relaxed(), row.throwCount(),
+                thrownBy, isMine, row.createdAt(), expiresAt);
+    }
+
+    private DartRequest readConditions(String conditions) {
+        try {
+            return objectMapper.readValue(conditions, DartRequest.class);
+        } catch (Exception e) {
+            // 저장된 조건이 깨진 것은 서버 데이터 문제다 — 404로 숨기지 않는다.
+            throw new IllegalStateException("다트 조건 역직렬화에 실패했습니다", e);
+        }
     }
 
     private List<DartCandidate> within(List<DartCandidate> candidates, DartRequest r, int limit) {
@@ -143,9 +201,17 @@ public class DartService {
     }
 
     private int estimateMinutes(DartRequest.Origin origin, DartCandidate c, DartRequest.Transport transport) {
-        double roadKm = haversine(origin.lat(), origin.lng(), c.getLat(), c.getLng()) * roadFactor;
-        if (transport == DartRequest.Transport.CAR) return (int) (roadKm / carKmh * 60) + 10;
-        int access = c.getTransitMinutes() != null ? c.getTransitMinutes() : switch (c.getAccessLevel()) {
+        return estimateMinutes(origin.lat(), origin.lng(), c.getLat(), c.getLng(),
+                c.getTransitMinutes(), c.getAccessLevel(), transport);
+    }
+
+    private int estimateMinutes(double originLat, double originLng, double destLat, double destLng,
+                                Integer transitMinutes, String accessLevel, DartRequest.Transport transport) {
+        double roadKm = haversine(originLat, originLng, destLat, destLng) * roadFactor;
+        if (transport == DartRequest.Transport.CAR) {
+            return (int) (roadKm / carKmh * 60) + 10;
+        }
+        int access = transitMinutes != null ? transitMinutes : switch (accessLevel) {
             case "WALKABLE" -> 20;
             case "CAR_RECOMMENDED" -> 45;
             default -> 75;
@@ -161,21 +227,36 @@ public class DartService {
                 minutes, c.getAccessLevel(), access.getLabel(), c.getStationName(), c.getStationToPlace(), c.getHasLodging());
     }
 
-    private Long saveLog(DartRequest request, DartCandidate result, int count, boolean relaxed, boolean reroll,
-                         Long userId, Integer relaxedFrom) {
+    private String saveLog(DartRequest request, DartCandidate result, int count, boolean relaxed, boolean reroll,
+                           Long userId, Integer relaxedFrom) {
         final String conditions;
         try {
             conditions = objectMapper.writeValueAsString(request);
         } catch (Exception e) {
             throw new IllegalStateException("다트 조건 직렬화에 실패했습니다", e);
         }
+        String shareToken;
+        do {
+            shareToken = RandomTokenGenerator.generate(SHARE_TOKEN_LENGTH);
+        } while (shareTokenExists(shareToken));
         return jdbcTemplate.queryForObject("""
-                        INSERT INTO dart_logs (user_id, conditions, candidate_id, candidate_count, relaxed, relaxed_from, is_reroll,
-                            result_place_id, throw_count, start_location, start_lat, start_lng)
-                        VALUES (?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, 1, ?, ?, ?) RETURNING id
-                        """, Long.class, userId, conditions, result.getId(), count, relaxed, relaxedFrom, reroll,
+                        INSERT INTO dart_logs (user_id, conditions, candidate_id, candidate_count, is_relaxed, relaxed_from, is_reroll,
+                            result_place_id, throw_count, start_location, start_lat, start_lng, share_token)
+                        VALUES (?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?) RETURNING share_token
+                        """, String.class, userId, conditions, result.getId(), count, relaxed, relaxedFrom, reroll,
                 result.getPlace() == null ? null : result.getPlace().getId(), request.origin().label(),
-                request.origin().lat(), request.origin().lng());
+                request.origin().lat(), request.origin().lng(), shareToken);
+    }
+
+    private boolean shareTokenExists(String shareToken) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM dart_logs WHERE share_token = ?)", Boolean.class, shareToken));
+    }
+
+    private record DartSharedRow(Long userId, String conditions, boolean relaxed, int throwCount,
+                                 OffsetDateTime createdAt, String originLabel, double startLat, double startLng,
+                                 String name, String sido, double lat, double lng, Long placeId,
+                                 String accessLevel, Integer transitMinutes) {
     }
 
     private List<Long> recentCandidates(Long userId) {
