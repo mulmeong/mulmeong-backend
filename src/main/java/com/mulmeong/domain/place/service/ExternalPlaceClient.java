@@ -100,8 +100,8 @@ public class ExternalPlaceClient {
                 .limit(size)
                 .map(item -> new ExternalCategoryPlaceResponse.Item(
                         item.externalId(), item.name(), tourCategoryName(item.contentTypeId()), item.imageUrl(),
-                        item.address(), null,
-                        item.lat(), item.lng(), item.distanceM()))
+                        item.address(), item.phone(), item.lat(), item.lng(), item.distanceM(), item.description(),
+                        item.homepageUrl()))
                 .toList();
         return new ExternalCategoryPlaceResponse(category.name(), items);
     }
@@ -165,10 +165,41 @@ public class ExternalPlaceClient {
                     items.add(new TourNearbyResponse.Item("TOUR_" + text(item, "contentid"),
                             text(item, "contentid"), integer(item, "contenttypeid"), text(item, "title"),
                             text(item, "overview"), image, text(item, "firstimage2"), joinAddress(item),
-                            decimal(item, "mapy"), decimal(item, "mapx"), meters(item, "dist")));
+                            text(item, "tel"), text(item, "homepage"), decimal(item, "mapy"), decimal(item, "mapx"),
+                            meters(item, "dist")));
                 }
             }
             return new TourNearbyResponse(items, responseBody.path("totalCount").asInt());
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new BusinessException(ErrorCode.EXTERNAL_QUOTA_EXCEEDED);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
+        }
+    }
+
+    public TourPlaceDetailResponse findTourDetail(String externalId) {
+        if (tourKey.isBlank()) {
+            throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
+        }
+        String contentId = externalId.replaceFirst("^TOUR_", "");
+        try {
+            String body = restClient.get().uri(uri -> uri.scheme("https").host("apis.data.go.kr")
+                    .path("/B551011/KorService2/detailCommon2")
+                    .queryParam("serviceKey", tourKey).queryParam("MobileOS", "ETC")
+                    .queryParam("MobileApp", "mulmeong").queryParam("contentId", contentId)
+                    .queryParam("defaultYN", "Y").queryParam("overviewYN", "Y")
+                    .queryParam("_type", "json").build()).retrieve().body(String.class);
+            JsonNode item = objectMapper.readTree(body).path("response").path("body").path("items").path("item").path(0);
+            if (item.isMissingNode()) {
+                throw new BusinessException(ErrorCode.PLACE_NOT_FOUND);
+            }
+            return new TourPlaceDetailResponse(
+                    "TOUR_" + contentId, contentId, integer(item, "contenttypeid"), text(item, "title"),
+                    text(item, "overview"), text(item, "firstimage"), text(item, "firstimage2"), joinAddress(item),
+                    text(item, "tel"), text(item, "homepage"), decimal(item, "mapy"), decimal(item, "mapx")
+            );
+        } catch (BusinessException e) {
+            throw e;
         } catch (HttpClientErrorException.TooManyRequests e) {
             throw new BusinessException(ErrorCode.EXTERNAL_QUOTA_EXCEEDED);
         } catch (Exception e) {

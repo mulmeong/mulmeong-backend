@@ -5,12 +5,14 @@ import com.mulmeong.domain.place.dto.response.ExternalCategoryPlaceResponse;
 import com.mulmeong.domain.place.dto.response.ExternalDirectionsResponse;
 import com.mulmeong.domain.place.dto.response.ExternalKeywordSearchResponse;
 import com.mulmeong.domain.place.dto.response.TourNearbyResponse;
+import com.mulmeong.domain.place.dto.response.TourPlaceDetailResponse;
 import com.mulmeong.domain.place.service.ExternalDirectionsClient;
 import com.mulmeong.domain.place.service.ExternalPlaceClient;
 import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,6 +56,11 @@ public class ExternalPlaceController {
         }
         int safeSize = clamp(size, MAX_TOUR_SIZE);
         return placeClient.findTourNearby(lat, lng, radius, contentTypeId, withImageOnly, safeSize);
+    }
+
+    @GetMapping("/tour/{externalId}")
+    public TourPlaceDetailResponse tourDetail(@PathVariable String externalId) {
+        return placeClient.findTourDetail(externalId);
     }
 
     @GetMapping("/places/category")

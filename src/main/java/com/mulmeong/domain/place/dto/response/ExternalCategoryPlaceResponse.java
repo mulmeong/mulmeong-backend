@@ -19,7 +19,9 @@ public record ExternalCategoryPlaceResponse(
             String phone,
             Double lat,
             Double lng,
-            Integer distanceM
+            Integer distanceM,
+            String description,
+            String homepageUrl
     ) {
     }
 }
