@@ -52,9 +52,6 @@ public class PlaceService {
         int safeSize = Math.min(size, 100);
         List<Place> all = placeRepository.findOnsens(region == null ? "" : region.trim(),
                 keyword == null ? "" : keyword.trim(), PageRequest.of(page, safeSize));
-        // Seeded MOIS rows may not have coordinates yet. Geocode only the requested page,
-        // persist successful results, and return the coordinates in this response immediately.
-        all.stream().filter(p -> p.getLat() == null || p.getLng() == null).forEach(externalPlaceClient::geocode);
         long total = placeRepository.countOnsens(region == null ? "" : region.trim(),
                 keyword == null ? "" : keyword.trim());
         List<Long> ids = all.stream().map(Place::getId).toList();
@@ -266,6 +263,7 @@ public class PlaceService {
         double lngDelta = radius / (111_000.0 * Math.max(0.1, Math.cos(Math.toRadians(onsen.getLat()))));
         return placeRepository.findNearbyPlaces(onsen.getLat() - latDelta, onsen.getLat() + latDelta,
                         onsen.getLng() - lngDelta, onsen.getLng() + lngDelta).stream()
+                .filter(place -> "TOUR_API".equals(place.getSource()) || "MOIS".equals(place.getSource()))
                 .filter(place -> matchesNearbyCategory(place, category))
                 .map(place -> new NearbyPlaceResponse.Content(
                         nearbySource(place), nearbyType(place), nearbyContentId(place), nearbyPlaceId(place), place.getName(),
@@ -294,15 +292,15 @@ public class PlaceService {
     }
 
     private String nearbySource(Place place) {
-        return "TOUR_API".equals(place.getSource()) ? "TOUR" : "KAKAO";
+        return "TOUR_API".equals(place.getSource()) ? "TOUR" : "MOIS";
     }
 
     private String nearbyContentId(Place place) {
-        return "TOUR_API".equals(place.getSource()) ? place.getExternalId() : null;
+        return place.getExternalId();
     }
 
     private String nearbyPlaceId(Place place) {
-        return "TOUR_API".equals(place.getSource()) ? null : place.getExternalId();
+        return null;
     }
 
     private double distanceKm(double lat1, double lng1, double lat2, double lng2) {

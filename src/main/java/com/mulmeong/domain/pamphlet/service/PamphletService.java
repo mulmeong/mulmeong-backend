@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class PamphletService {
-    private static final String SHARE_BASE = "https://mulmeong.app/pamphlet/";
+    private static final String SHARE_BASE = "https://mulmeong.space/pamphlet/";
     private final PamphletRepository pamphlets;
     private final PamphletPlaceRepository pamphletPlaces;
     private final PlaceRepository places;

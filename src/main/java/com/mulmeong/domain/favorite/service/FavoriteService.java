@@ -41,9 +41,16 @@ public class FavoriteService {
 
     @Transactional
     public CreateOutcome create(Long userId, FavoriteCreateRequest request) {
+        if ("KAKAO".equalsIgnoreCase(request.source())) {
+            throw new BusinessException(ErrorCode.KAKAO_PLACE_FAVORITE_NOT_SUPPORTED);
+        }
+
         Place place;
         if (request.placeId() != null) {
             place = places.findById(request.placeId()).orElseThrow(() -> new BusinessException(ErrorCode.PLACE_NOT_FOUND));
+            if ("KAKAO".equals(place.getSource())) {
+                throw new BusinessException(ErrorCode.KAKAO_PLACE_FAVORITE_NOT_SUPPORTED);
+            }
         } else {
             if (request.source() == null || request.externalId() == null || request.name() == null
                     || request.lat() == null || request.lng() == null || request.category() == null)

@@ -46,7 +46,7 @@ public interface MyReviewRepository extends JpaRepository<User, Long> {
                                     @Param("sortCode") int sortCode, Pageable pageable);
 
     @Query(value = """
-            SELECT p.sido_code AS "regionCode", p.sido AS name, COUNT(*) AS count
+            SELECT p.sido_code AS "regionCode", p.sido AS name, COUNT(*) AS "count"
             FROM reviews r JOIN places p ON p.id = r.place_id
             WHERE r.user_id = :userId AND r.deleted_at IS NULL AND p.sido_code IS NOT NULL
             GROUP BY p.sido_code, p.sido
