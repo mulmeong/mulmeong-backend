@@ -100,7 +100,7 @@ public class ExternalPlaceClient {
                 .filter(item -> category.matchesTitle(item.name()))
                 .limit(size)
                 .map(item -> new ExternalCategoryPlaceResponse.Item(
-                        item.externalId(), item.name(), tourCategoryName(item.contentTypeId()), item.imageUrl(),
+                        item.externalId(), item.contentTypeId(), item.name(), tourCategoryName(item.contentTypeId()), item.imageUrl(),
                         item.address(), item.phone(), item.lat(), item.lng(), item.distanceM(), item.description(),
                         item.homepageUrl()))
                 .toList();
@@ -178,9 +178,22 @@ public class ExternalPlaceClient {
         }
     }
 
-    public TourPlaceDetailResponse findTourDetail(String externalId) {
+    public TourPlaceDetailResponse findTourDetail(String externalId, Integer contentTypeId) {
         if (tourKey.isBlank()) {
             throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
+        }
+        if (contentTypeId == null) {
+            for (int type : List.of(12, 14, 15, 25, 28, 32, 38, 39)) {
+                try {
+                    return findTourDetail(externalId, type);
+                } catch (BusinessException e) {
+                    if (e.getErrorCode() != ErrorCode.PLACE_NOT_FOUND) {
+                        throw e;
+                    }
+                    // 목록 API가 콘텐츠 타입을 보내지 않은 이전 클라이언트도 지원한다.
+                }
+            }
+            throw new BusinessException(ErrorCode.PLACE_NOT_FOUND);
         }
         String contentId = externalId.replaceFirst("^TOUR_", "");
         try {
@@ -188,7 +201,10 @@ public class ExternalPlaceClient {
                     .path("/B551011/KorService2/detailCommon2")
                     .queryParam("serviceKey", tourKey).queryParam("MobileOS", "ETC")
                     .queryParam("MobileApp", "mulmeong").queryParam("contentId", contentId)
-                    .queryParam("defaultYN", "Y").queryParam("overviewYN", "Y")
+                    .queryParam("contentTypeId", contentTypeId)
+                    .queryParam("defaultYN", "Y").queryParam("firstImageYN", "Y")
+                    .queryParam("addrinfoYN", "Y").queryParam("mapinfoYN", "Y")
+                    .queryParam("overviewYN", "Y")
                     .queryParam("_type", "json").build()).retrieve().body(String.class);
             JsonNode source = objectMapper.readTree(body).path("response").path("body").path("items").path("item");
             JsonNode item = source.isArray() ? source.path(0) : source;
