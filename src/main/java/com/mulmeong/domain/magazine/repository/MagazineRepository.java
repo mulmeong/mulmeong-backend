@@ -23,6 +23,23 @@ public interface MagazineRepository extends JpaRepository<Magazine, Long> {
     Page<Magazine> search(@Param("category") MagazineCategory category, @Param("sidoCode") String sidoCode, Pageable pageable);
 
     @Query("select m from Magazine m where m.publishedAt is not null and m.publishedAt <= CURRENT_TIMESTAMP " +
+            "and (:category is null or m.category = :category) and m.sidoCode in :sidoCodes")
+    Page<Magazine> searchBySidoCodes(@Param("category") MagazineCategory category,
+                                     @Param("sidoCodes") java.util.List<String> sidoCodes, Pageable pageable);
+
+    @Query("select m.sidoCode as sidoCode, count(m) as count from Magazine m " +
+            "where m.publishedAt is not null and m.publishedAt <= CURRENT_TIMESTAMP " +
+            "and m.sidoCode is not null and (:category is null or m.category = :category) " +
+            "group by m.sidoCode order by count(m) desc, m.sidoCode asc")
+    java.util.List<RegionCount> countBySidoCode(@Param("category") MagazineCategory category);
+
+    @Query("select m from Magazine m where m.publishedAt is not null and m.publishedAt <= CURRENT_TIMESTAMP " +
             "and m.category = :category and m.id > :id order by m.id asc")
     java.util.List<Magazine> findNext(@Param("category") MagazineCategory category, @Param("id") Long id, Pageable pageable);
+
+    interface RegionCount {
+        String getSidoCode();
+
+        long getCount();
+    }
 }
