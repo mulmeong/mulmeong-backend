@@ -1,5 +1,6 @@
 package com.mulmeong.domain.place.service;
 
+import com.mulmeong.domain.place.dto.response.CoordinateAddressResponse;
 import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.domain.place.entity.PlaceType;
 import com.mulmeong.domain.place.repository.PlaceRepository;
@@ -39,9 +40,29 @@ public class TourApiSyncService {
                     .orElseGet(() -> Place.createTourOnsen(item.externalId(), item.name(), item.address(),
                             item.lat(), item.lng(), item.phone(), item.homepageUrl()));
             place.updateTourData(item.name(), item.address(), item.lat(), item.lng(), item.phone(), item.homepageUrl());
+            updateRegion(place, item);
             placeRepository.save(place);
             updated++;
         }
         log.info("TourAPI onsen sync completed: {} records", updated);
+    }
+
+    private void updateRegion(Place place, ExternalPlaceClient.TourOnsenData item) {
+        if (item.lat() == null || item.lng() == null) {
+            return;
+        }
+        try {
+            CoordinateAddressResponse address = externalPlaceClient.coord2address(item.lat(), item.lng());
+            String regionCode = address.regionCode();
+            if (regionCode == null || regionCode.length() < 5) {
+                log.warn("TourAPI onsen region lookup returned no region code for externalId={}", item.externalId());
+                return;
+            }
+            String sidoCode = regionCode.substring(0, 2);
+            place.updateRegion(address.sido(), address.sigungu(), sidoCode, regionCode);
+        } catch (BusinessException exception) {
+            log.warn("TourAPI onsen region lookup failed for externalId={}: {}",
+                    item.externalId(), exception.getErrorCode());
+        }
     }
 }

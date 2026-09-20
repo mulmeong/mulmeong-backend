@@ -3,6 +3,7 @@ package com.mulmeong.domain.place.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mulmeong.domain.place.dto.request.PoiCategory;
+import com.mulmeong.domain.place.dto.response.CoordinateAddressResponse;
 import com.mulmeong.domain.place.dto.response.ExternalCategoryPlaceResponse;
 import com.mulmeong.domain.place.dto.response.ExternalKeywordSearchResponse;
 import com.mulmeong.domain.place.dto.response.NearbyPlaceResponse;
@@ -12,6 +13,7 @@ import com.mulmeong.global.exception.BusinessException;
 import com.mulmeong.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -29,6 +31,9 @@ public class ExternalPlaceClient {
 
     @Value("${external.tour-api.service-key:}")
     private String tourKey;
+
+    @Value("${external.kakao.rest-api-key:}")
+    private String kakaoKey;
 
     public ExternalPlaceClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -196,19 +201,19 @@ public class ExternalPlaceClient {
             throw new BusinessException(ErrorCode.PLACE_NOT_FOUND);
         }
         String contentId = externalId.replaceFirst("^TOUR_", "");
+        String body = null;
         try {
-            String body = restClient.get().uri(uri -> uri.scheme("https").host("apis.data.go.kr")
+            body = restClient.get().uri(uri -> uri.scheme("https").host("apis.data.go.kr")
                     .path("/B551011/KorService2/detailCommon2")
                     .queryParam("serviceKey", tourKey).queryParam("MobileOS", "ETC")
                     .queryParam("MobileApp", "mulmeong").queryParam("contentId", contentId)
                     .queryParam("contentTypeId", contentTypeId)
-                    .queryParam("defaultYN", "Y").queryParam("firstImageYN", "Y")
-                    .queryParam("addrinfoYN", "Y").queryParam("mapinfoYN", "Y")
-                    .queryParam("overviewYN", "Y")
                     .queryParam("_type", "json").build()).retrieve().body(String.class);
             JsonNode source = objectMapper.readTree(body).path("response").path("body").path("items").path("item");
             JsonNode item = source.isArray() ? source.path(0) : source;
             if (item.isMissingNode() || item.isNull() || item.isTextual()) {
+                log.warn("TourAPI detail returned no item for contentId={}, contentTypeId={}: {}",
+                        contentId, contentTypeId, oneLine(body));
                 throw new BusinessException(ErrorCode.PLACE_NOT_FOUND);
             }
             return new TourPlaceDetailResponse(
@@ -222,8 +227,70 @@ public class ExternalPlaceClient {
         } catch (HttpClientErrorException.TooManyRequests e) {
             throw new BusinessException(ErrorCode.EXTERNAL_QUOTA_EXCEEDED);
         } catch (Exception e) {
+            log.warn("TourAPI detail request failed for contentId={}, contentTypeId={}: {}",
+                    contentId, contentTypeId, oneLine(body), e);
             throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
         }
+    }
+
+    public CoordinateAddressResponse coord2address(double lat, double lng) {
+        if (lat < 33 || lat > 39 || lng < 124 || lng > 132) {
+            throw new BusinessException(ErrorCode.OUT_OF_SERVICE_AREA);
+        }
+        if (kakaoKey.isBlank()) {
+            throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
+        }
+        try {
+            String body = restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
+                            .path("/v2/local/geo/coord2address.json")
+                            .queryParam("x", lng).queryParam("y", lat).build())
+                    .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
+                    .retrieve().body(String.class);
+            JsonNode document = objectMapper.readTree(body).path("documents").path(0);
+            JsonNode address = document.path("address");
+            JsonNode road = document.path("road_address");
+            String roadAddress = text(road, "address_name");
+            String jibunAddress = text(address, "address_name");
+            String label = roadAddress == null ? jibunAddress : roadAddress;
+            Region region = region(lat, lng);
+            return new CoordinateAddressResponse(lat, lng, roadAddress, jibunAddress,
+                    region.sido(), region.sigungu(), region.code(), label);
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new BusinessException(ErrorCode.EXTERNAL_QUOTA_EXCEEDED);
+        } catch (Exception e) {
+            log.warn("Kakao coord2address request failed for lat={}, lng={}: {}", lat, lng, e.getMessage());
+            throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
+        }
+    }
+
+    private Region region(double lat, double lng) throws Exception {
+        String body = restClient.get().uri(uri -> uri.scheme("https").host("dapi.kakao.com")
+                        .path("/v2/local/geo/coord2regioncode.json")
+                        .queryParam("x", lng).queryParam("y", lat).build())
+                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoKey)
+                .retrieve().body(String.class);
+        JsonNode documents = objectMapper.readTree(body).path("documents");
+        JsonNode legal = documents.path(0);
+        for (JsonNode document : documents) {
+            if ("B".equals(text(document, "region_type"))) {
+                legal = document;
+                break;
+            }
+        }
+        String bCode = text(legal, "code");
+        String regionCode = bCode == null || bCode.length() < 5 ? bCode : bCode.substring(0, 5);
+        return new Region(text(legal, "region_1depth_name"), text(legal, "region_2depth_name"), regionCode);
+    }
+
+    private static String oneLine(String body) {
+        if (body == null) {
+            return "null";
+        }
+        String normalized = body.replaceAll("\\s+", " ");
+        return normalized.length() <= 2_000 ? normalized : normalized.substring(0, 2_000) + "...";
+    }
+
+    private record Region(String sido, String sigungu, String code) {
     }
 
     private List<NearbyPlaceResponse.Content> findTour(double lat, double lng, int radius, String category) {

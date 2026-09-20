@@ -1,6 +1,7 @@
 package com.mulmeong.domain.place.controller;
 
 import com.mulmeong.domain.place.dto.request.PoiCategory;
+import com.mulmeong.domain.place.dto.response.CoordinateAddressResponse;
 import com.mulmeong.domain.place.dto.response.ExternalCategoryPlaceResponse;
 import com.mulmeong.domain.place.dto.response.ExternalDirectionsResponse;
 import com.mulmeong.domain.place.dto.response.ExternalKeywordSearchResponse;
@@ -43,6 +44,11 @@ public class ExternalPlaceController {
         }
         int safeSize = clamp(size, MAX_SEARCH_SIZE);
         return placeClient.searchKeyword(trimmed, lat, lng, safeSize);
+    }
+
+    @GetMapping("/places/coord2address")
+    public CoordinateAddressResponse coord2address(@RequestParam double lat, @RequestParam double lng) {
+        return placeClient.coord2address(lat, lng);
     }
 
     @GetMapping("/tour/nearby")
