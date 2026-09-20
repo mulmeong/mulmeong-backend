@@ -3,6 +3,7 @@ package com.mulmeong.domain.place.service;
 import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.domain.place.entity.PlaceType;
 import com.mulmeong.domain.place.repository.PlaceRepository;
+import com.mulmeong.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
