@@ -14,8 +14,15 @@ public class MagazineController {
     private final MagazineService service;
 
     @GetMapping
-    public MagazineListResponse list(@RequestParam(required = false) String category, @RequestParam(required = false) String sidoCode, @RequestParam(defaultValue = "LATEST") String sort, @RequestParam(defaultValue = "false") boolean featured, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size, @AuthenticationPrincipal Long userId) {
-        return service.list(category, sidoCode, sort, featured, page, size, userId);
+    public MagazineListResponse list(@RequestParam(required = false) String category,
+                                     @RequestParam(required = false) String sidoCode,
+                                     @RequestParam(required = false) String region,
+                                     @RequestParam(defaultValue = "LATEST") String sort,
+                                     @RequestParam(defaultValue = "false") boolean featured,
+                                     @RequestParam(defaultValue = "0") int page,
+                                     @RequestParam(defaultValue = "12") int size,
+                                     @AuthenticationPrincipal Long userId) {
+        return service.list(category, sidoCode, region, sort, featured, page, size, userId);
     }
 
     @GetMapping("/{id}")
