@@ -98,6 +98,14 @@ class OnsenApiIntegrationTest {
     }
 
     @Test
+    void api902_coord2address_isMapped() throws Exception {
+        mockMvc.perform(get("/api/v1/external/places/coord2address")
+                        .param("lat", "37.5665").param("lng", "126.9780"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("EXTERNAL_API_FAILED"));
+    }
+
+    @Test
     void api203_detail_matchesContract() throws Exception {
         mockMvc.perform(get("/api/v1/onsens/{id}", onsenId))
                 .andExpect(status().isOk())

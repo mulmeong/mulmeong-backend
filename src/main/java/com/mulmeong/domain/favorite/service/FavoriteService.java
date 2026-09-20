@@ -57,8 +57,10 @@ public class FavoriteService {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED);
             place = places.findBySourceAndExternalId(request.source(), request.externalId()).orElseGet(() ->
                     places.save(Place.createExternal(request.source(), request.externalId(), request.name(),
-                            request.lat(), request.lng(), request.category(), request.address(), request.phone())));
-            place.updateExternal(request.name(), request.lat(), request.lng(), request.category(), request.address(), request.phone());
+                            request.lat(), request.lng(), request.category(), request.address(), request.phone(),
+                            request.contentTypeId())));
+            place.updateExternal(request.name(), request.lat(), request.lng(), request.category(), request.address(),
+                    request.phone(), request.contentTypeId());
             if (request.imageUrl() != null && !request.imageUrl().isBlank()
                     && images.findByPlaceIdOrderBySortOrder(place.getId()).stream().noneMatch(i -> request.imageUrl().equals(i.getImageUrl())))
                 images.save(new PlaceImage(place.getId(), request.imageUrl(), (short) 0));

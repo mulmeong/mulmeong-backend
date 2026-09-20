@@ -17,7 +17,8 @@ import java.math.BigDecimal;
 public class Place extends BaseTimeEntity {
 
     public static Place createExternal(String source, String externalId, String name,
-                                       Double lat, Double lng, PlaceType placeType, String address, String phone) {
+                                       Double lat, Double lng, PlaceType placeType, String address, String phone,
+                                       Integer contentTypeId) {
         Place place = new Place();
         place.source = source;
         place.externalId = externalId;
@@ -27,18 +28,20 @@ public class Place extends BaseTimeEntity {
         place.placeType = placeType;
         place.address = address;
         place.phone = phone;
+        place.contentTypeId = contentTypeId;
         place.registeredOnsen = false;
         return place;
     }
 
     public void updateExternal(String name, Double lat, Double lng, PlaceType placeType,
-                               String address, String phone) {
+                               String address, String phone, Integer contentTypeId) {
         this.name = name;
         this.lat = lat;
         this.lng = lng;
         this.placeType = placeType;
         this.address = address;
         this.phone = phone;
+        this.contentTypeId = contentTypeId;
     }
 
     public static Place createTourOnsen(String externalId, String name, String address,
@@ -54,6 +57,7 @@ public class Place extends BaseTimeEntity {
         place.lng = lng;
         place.phone = phone;
         place.homepageUrl = homepageUrl;
+        place.contentTypeId = 12;
         return place;
     }
 
@@ -65,6 +69,13 @@ public class Place extends BaseTimeEntity {
         this.lng = lng;
         this.phone = phone;
         this.homepageUrl = homepageUrl;
+    }
+
+    public void updateRegion(String sido, String sigungu, String sidoCode, String sigunguCode) {
+        this.sido = sido;
+        this.sigungu = sigungu;
+        this.sidoCode = sidoCode;
+        this.sigunguCode = sigunguCode;
     }
 
     public void updateCoordinates(double lat, double lng) {
@@ -88,6 +99,9 @@ public class Place extends BaseTimeEntity {
 
     @Column(name = "external_id")
     private String externalId;
+
+    @Column(name = "content_type_id")
+    private Integer contentTypeId;
 
     @Column(nullable = false)
     private String name;

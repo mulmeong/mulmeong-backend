@@ -137,7 +137,8 @@ public class PamphletService {
         String type = p.getPlaceType().name();
         String sub = p.getPlaceType() == PlaceType.ONSEN ? (p.getWaterTemp() == null ? "" : p.getWaterTemp() + "℃") + (p.getWaterType() == null ? "" : " · " + p.getWaterType()) + (Boolean.TRUE.equals(p.getHasOutdoor()) ? " · 노천 있음" : "") : typeLabel(p.getPlaceType());
         String kakao = "KAKAO".equals(p.getSource()) && p.getExternalId() != null ? "http://place.map.kakao.com/" + p.getExternalId().replaceFirst("^KAKAO_", "") : null;
-        return new PamphletPlaceItem(seq, p.getId(), type, typeLabel(p.getPlaceType()), p.getName(), sub, p.getAddress(), image(p.getId()), p.getLat(), p.getLng(), kakao);
+        return new PamphletPlaceItem(seq, p.getId(), p.getExternalId(), p.getContentTypeId(), type,
+                typeLabel(p.getPlaceType()), p.getName(), sub, p.getAddress(), image(p.getId()), p.getLat(), p.getLng(), kakao);
     }
 
     private String image(Long id) {
