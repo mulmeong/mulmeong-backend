@@ -1,5 +1,6 @@
 package com.mulmeong.domain.pamphlet.service;
 
+import com.mulmeong.domain.dart.repository.DartCandidateRepository;
 import com.mulmeong.domain.pamphlet.dto.request.PamphletCreateRequest;
 import com.mulmeong.domain.pamphlet.dto.response.*;
 import com.mulmeong.domain.pamphlet.entity.Pamphlet;
@@ -10,6 +11,8 @@ import com.mulmeong.domain.place.entity.Place;
 import com.mulmeong.domain.place.entity.PlaceType;
 import com.mulmeong.domain.place.repository.PlaceImageRepository;
 import com.mulmeong.domain.place.repository.PlaceRepository;
+import com.mulmeong.domain.place.repository.ReviewAggregate;
+import com.mulmeong.domain.place.repository.ReviewAggregateRepository;
 import com.mulmeong.domain.user.entity.User;
 import com.mulmeong.domain.user.service.UserService;
 import com.mulmeong.global.exception.BusinessException;
@@ -33,6 +36,8 @@ public class PamphletService {
     private final PamphletPlaceRepository pamphletPlaces;
     private final PlaceRepository places;
     private final PlaceImageRepository images;
+    private final DartCandidateRepository dartCandidates;
+    private final ReviewAggregateRepository reviewAggregates;
     private final UserService users;
 
     @Transactional
@@ -119,9 +124,16 @@ public class PamphletService {
 
     private PamphletDetail detail(Pamphlet p, List<Place> selected, User author, boolean mine) {
         int onsens = (int) selected.stream().filter(x -> x.getPlaceType() == PlaceType.ONSEN).count();
+        Map<Long, ReviewAggregate> reviewsByPlaceId = selected.isEmpty()
+                ? Map.of()
+                : reviewAggregates.findByPlaceIds(selected.stream().map(Place::getId).toList())
+                        .stream()
+                        .collect(Collectors.toMap(ReviewAggregate::getPlaceId, review -> review));
         return new PamphletDetail(mine ? p.getId() : null, p.getShareToken(), p.getTitle(), toInteger(p.getPartySize()), p.getTravelDate(),
                 new PamphletAuthor(author.getNickname(), author.level().number(), author.level().title()), mine, p.getCoverImageUrl(),
-                java.util.stream.IntStream.range(0, selected.size()).mapToObj(i -> placeItem(selected.get(i), i + 1)).toList(),
+                java.util.stream.IntStream.range(0, selected.size())
+                        .mapToObj(i -> placeItem(selected.get(i), i + 1, reviewsByPlaceId.get(selected.get(i).getId())))
+                        .toList(),
                 new PamphletSummary(onsens, selected.size(), regionName(selected)), p.getCreatedAt());
     }
 
@@ -133,12 +145,33 @@ public class PamphletService {
         return pamphletPlaces.findByPamphletIdOrderBySortOrder(id).stream().map(x -> places.findById(x.getPlaceId()).orElse(null)).filter(Objects::nonNull).toList();
     }
 
-    private PamphletPlaceItem placeItem(Place p, int seq) {
+    private PamphletPlaceItem placeItem(Place p, int seq, ReviewAggregate review) {
         String type = p.getPlaceType().name();
         String sub = p.getPlaceType() == PlaceType.ONSEN ? (p.getWaterTemp() == null ? "" : p.getWaterTemp() + "℃") + (p.getWaterType() == null ? "" : " · " + p.getWaterType()) + (Boolean.TRUE.equals(p.getHasOutdoor()) ? " · 노천 있음" : "") : typeLabel(p.getPlaceType());
         String kakao = "KAKAO".equals(p.getSource()) && p.getExternalId() != null ? "http://place.map.kakao.com/" + p.getExternalId().replaceFirst("^KAKAO_", "") : null;
+        List<String> placeImages = images.findByPlaceIdOrderBySortOrder(p.getId()).stream()
+                .map(image -> image.getImageUrl())
+                .toList();
+        String thumbnail = placeImages.stream().findFirst().orElse(null);
+        PamphletPlaceItem.NearestStation nearestStation = dartCandidates.findFirstByPlace_IdOrderById(p.getId())
+                .filter(candidate -> candidate.getStationName() != null && !candidate.getStationName().isBlank())
+                .map(candidate -> new PamphletPlaceItem.NearestStation(
+                        candidate.getStationName(), candidate.getStationToPlace()))
+                .orElse(null);
+        PamphletPlaceItem.Access access = new PamphletPlaceItem.Access(
+                p.getAccessLevel() == null ? null : p.getAccessLevel().name(),
+                p.getAccessLevel() == null ? null : p.getAccessLevel().getLabel(), nearestStation);
+        PamphletPlaceItem.ReviewSummary reviewSummary = review == null
+                ? new PamphletPlaceItem.ReviewSummary(0, null)
+                : new PamphletPlaceItem.ReviewSummary(review.getReviewCount(), review.getRating());
         return new PamphletPlaceItem(seq, p.getId(), p.getExternalId(), p.getContentTypeId(), type,
-                typeLabel(p.getPlaceType()), p.getName(), sub, p.getAddress(), image(p.getId()), p.getLat(), p.getLng(), kakao);
+                typeLabel(p.getPlaceType()), p.getName(), sub, p.getAddress(), thumbnail, p.getLat(), p.getLng(), kakao,
+                p.getPriceMin(), new PamphletPlaceItem.Water(
+                        p.getWaterTemp() == null ? null : p.getWaterTemp().doubleValue(),
+                        p.getWaterType(), p.getWaterComponent(),
+                        p.getPh() == null ? null : p.getPh().doubleValue(), p.getWaterBenefit()),
+                new PamphletPlaceItem.Facilities(p.getHasOutdoor(), p.getHasLodging(), p.getFacilityType()),
+                access, placeImages, thumbnail, p.getRegionComment(), p.getNotes(), reviewSummary);
     }
 
     private String image(Long id) {
