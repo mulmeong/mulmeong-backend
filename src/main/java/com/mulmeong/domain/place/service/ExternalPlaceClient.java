@@ -187,19 +187,6 @@ public class ExternalPlaceClient {
         if (tourKey.isBlank()) {
             throw new BusinessException(ErrorCode.EXTERNAL_API_FAILED);
         }
-        if (contentTypeId == null) {
-            for (int type : List.of(12, 14, 15, 25, 28, 32, 38, 39)) {
-                try {
-                    return findTourDetail(externalId, type);
-                } catch (BusinessException e) {
-                    if (e.getErrorCode() != ErrorCode.PLACE_NOT_FOUND) {
-                        throw e;
-                    }
-                    // 목록 API가 콘텐츠 타입을 보내지 않은 이전 클라이언트도 지원한다.
-                }
-            }
-            throw new BusinessException(ErrorCode.PLACE_NOT_FOUND);
-        }
         String contentId = externalId.replaceFirst("^TOUR_", "");
         String body = null;
         try {
@@ -207,7 +194,6 @@ public class ExternalPlaceClient {
                     .path("/B551011/KorService2/detailCommon2")
                     .queryParam("serviceKey", tourKey).queryParam("MobileOS", "ETC")
                     .queryParam("MobileApp", "mulmeong").queryParam("contentId", contentId)
-                    .queryParam("contentTypeId", contentTypeId)
                     .queryParam("_type", "json").build()).retrieve().body(String.class);
             JsonNode source = objectMapper.readTree(body).path("response").path("body").path("items").path("item");
             JsonNode item = source.isArray() ? source.path(0) : source;
