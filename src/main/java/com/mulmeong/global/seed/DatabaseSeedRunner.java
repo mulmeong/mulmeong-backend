@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 /**
  * seed 프로필이 켜졌을 때만 동작. 스크립트는 전부 (source, external_id) / name 기준
  * ON CONFLICT upsert라 재실행해도 안전 — 배포마다 자동으로 최신 시드가 반영된다.
- * places -> magazines -> dart_candidates 순서(외래키/매칭 의존성)를 지켜야 한다.
+ * places -> magazines -> dart_candidates -> region codes 순서(외래키/매칭 의존성)를 지켜야 한다.
  */
 @Component
 @Profile("seed")
@@ -21,7 +21,9 @@ public class DatabaseSeedRunner implements ApplicationRunner {
     private static final String[] SEED_SCRIPTS = {
             "db/seed/places_seed.sql",
             "db/seed/magazines_seed.sql",
-            "db/seed/dart_candidates_seed.sql"
+            "db/seed/dart_candidates_seed.sql",
+            "db/migration/V6__populate_sigungu_codes.sql",
+            "db/migration/V8__fix_missing_review_region_codes.sql"
     };
 
     private final DataSource dataSource;
